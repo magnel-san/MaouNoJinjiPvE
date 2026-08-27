@@ -133,7 +133,7 @@ namespace Game
                 var previous = isRight ? _rightFingerState : _leftFingerState;
                 var fingers = HandPoseClassifier.GetFingerState(points, _thresholds, previous, out var metrics);
                 var thumbDir = HandPoseClassifier.GetThumbDirection(points, _thresholds.ThumbDirectionMargin);
-                var pose = ClassifyPose(fingers, thumbDir);
+                var pose = ClassifyPose(fingers, metrics, thumbDir, _thresholds.ClearlyExtendedStraightness);
                 if (isRight) { rightPose = pose; _rightFingerState = fingers; _rightMetrics = metrics; _rightThumbDir = thumbDir; _rightHandDetected = true; }
                 else { leftPose = pose; _leftFingerState = fingers; _leftMetrics = metrics; _leftThumbDir = thumbDir; _leftHandDetected = true; }
 
@@ -221,20 +221,33 @@ namespace Game
             return categories[0].categoryName == "Left";
         }
 
-        // 5指の伸展/屈曲状態から、離散コマンドに使う形を判定する。互いに排他になるよう
-        // 親指の伸展/屈曲も条件に含めている(例: 「人差し指のみ」と「チョキ」を確実に区別する)。
-        // 親指のみ伸展のパターンは、さらに向き(thumbDir)でThumbUp(グッドサイン)/ThumbDown(バッドサイン)を
-        // 区別する。どちらとも言えない向き(Neutral、横向き等)はThumbUp扱いにしておく
-        // (元々のグッドサイン1つだけだった頃と挙動が変わらないようにするため)。
-        static HandPose ClassifyPose(HandPoseClassifier.FingerState f, HandPoseClassifier.ThumbDirection thumbDir)
+        // 5指の伸展/屈曲状態から、離散コマンドに使う形を判定する。
+        //
+        // パーは親指の伸展判定(距離比ベース)を条件に含めない。親指を横に大きく開かなくても
+        // 残り4指さえ伸びていれば「パーのつもり」であることが実機テストで分かったため
+        // (親指の距離比が伸展しきい値に届かず、パーの残り4指が0.96〜0.99と明確に伸びていても
+        // 不成立になっていたバグ)、親指の状態に関係なく残り4指の伸展だけで判定する。
+        //
+        // ThumbUp(グッドサイン)/ThumbDown(バッドサイン)は、親指自身の伸展判定(f.Thumb)を要求せず、
+        // 向き(thumbDir、真上/真下)だけを主判定にする。ThumbDown時は掌がカメラを向くのに対し
+        // ThumbUp時は掌が反対を向くことが多く、他4指の屈曲判定がオクルージョンでブレて
+        // 「屈曲している」と確定しづらいため(ThumbDownは反応するがThumbUpは全く反応しないバグの原因だった)。
+        // 誤検出防止のため、他4指のうち明らかに(通常よりずっと厳しいClearlyExtendedStraightness基準で)
+        // 伸びている指が1本でもあれば、パー等の別ジェスチャーの途中とみなしキャンセルする。
+        static HandPose ClassifyPose(HandPoseClassifier.FingerState f, HandPoseClassifier.FingerMetrics m, HandPoseClassifier.ThumbDirection thumbDir, float clearlyExtendedThreshold)
         {
             if (!f.Thumb && f.Index && !f.Middle && !f.Ring && !f.Pinky) return HandPose.IndexOnly;
-            if (f.Thumb && f.Index && f.Middle && f.Ring && f.Pinky) return HandPose.OpenPalm;
+            if (f.Index && f.Middle && f.Ring && f.Pinky) return HandPose.OpenPalm;
             if (!f.Thumb && f.Index && f.Middle && !f.Ring && !f.Pinky) return HandPose.Scissors;
-            if (f.Thumb && !f.Index && !f.Middle && !f.Ring && !f.Pinky)
+
+            if (thumbDir != HandPoseClassifier.ThumbDirection.Neutral && !AnyClearlyExtended(m, clearlyExtendedThreshold))
                 return thumbDir == HandPoseClassifier.ThumbDirection.Down ? HandPose.ThumbDown : HandPose.ThumbUp;
+
             return HandPose.None;
         }
+
+        static bool AnyClearlyExtended(HandPoseClassifier.FingerMetrics m, float threshold) =>
+            m.Index > threshold || m.Middle > threshold || m.Ring > threshold || m.Pinky > threshold;
 
         // ApplyCommandと対になる、CommandAnnouncer用の表示名。Scissors(回復)はUpdateHealPulseが
         // 独自に「回復」を通知するため、ここではnull(無表示)にして二重通知を避ける。

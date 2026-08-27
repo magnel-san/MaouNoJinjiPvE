@@ -47,6 +47,8 @@ namespace Game
             root.sizeDelta = new Vector2(500f, 50f);
 
             var bg = root.gameObject.AddComponent<Image>();
+            bg.sprite = VfxShaderUtil.GetPanelSprite();
+            bg.type = Image.Type.Sliced;
             bg.color = new Color(0f, 0f, 0f, 0.6f);
             bg.raycastTarget = false;
 
@@ -54,6 +56,7 @@ namespace Game
             fillRect.offsetMin = new Vector2(4f, 4f);
             fillRect.offsetMax = new Vector2(-4f, -4f);
             fillImage = fillRect.gameObject.AddComponent<Image>();
+            fillImage.sprite = VfxShaderUtil.GetGradientFillSprite();
             fillImage.type = Image.Type.Filled;
             fillImage.fillMethod = Image.FillMethod.Horizontal;
             fillImage.fillOrigin = (int)Image.OriginHorizontal.Left;

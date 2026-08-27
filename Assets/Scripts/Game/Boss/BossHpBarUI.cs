@@ -60,6 +60,8 @@ namespace Game
             barRoot.sizeDelta = new Vector2(900f, 70f);
 
             var bgImage = barRoot.gameObject.AddComponent<Image>();
+            bgImage.sprite = VfxShaderUtil.GetPanelSprite();
+            bgImage.type = Image.Type.Sliced;
             bgImage.color = _backgroundColor;
             bgImage.raycastTarget = false;
 
@@ -87,6 +89,7 @@ namespace Game
             fillRect.offsetMin = Vector2.zero;
             fillRect.offsetMax = Vector2.zero;
             fillImage = fillRect.gameObject.AddComponent<Image>();
+            fillImage.sprite = VfxShaderUtil.GetGradientFillSprite();
             fillImage.color = _fullColor;
             fillImage.type = Image.Type.Filled;
             fillImage.fillMethod = Image.FillMethod.Horizontal;

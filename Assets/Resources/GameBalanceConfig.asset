@@ -102,10 +102,10 @@ MonoBehaviour:
     Tier3: 20
     Tier4: 25
     Tier5: 33
-  HeroMaxHPMultiplier: 2
-  HeroAttackPowerMultiplier: 2
-  MonsterMaxHPMultiplier: 1
-  MonsterAttackPowerMultiplier: 1
+  HeroMaxHPMultiplier: 1
+  HeroAttackPowerMultiplier: 1
+  MonsterMaxHPMultiplier: 6
+  MonsterAttackPowerMultiplier: 2.5
   BossMaxHP: 2200
   BossShockwaveCooldown: 7
   BossShockwaveRadius: 6

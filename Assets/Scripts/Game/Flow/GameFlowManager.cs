@@ -242,7 +242,8 @@ namespace Game.Flow
     {
       if (_bossPrefab == null) return;
 
-      var instance = Instantiate(_bossPrefab, _bossSpawnPosition, Quaternion.identity);
+      // ボスプレハブのデフォルト向きだとプレイヤー側と逆(背中)を向いてしまうため、Y軸180度回転させて出現させる。
+      var instance = Instantiate(_bossPrefab, _bossSpawnPosition, Quaternion.Euler(0f, 180f, 0f));
 
       var identity = instance.GetComponent<CharacterIdentity>();
       if (identity != null) identity.Team = Team.Enemy;

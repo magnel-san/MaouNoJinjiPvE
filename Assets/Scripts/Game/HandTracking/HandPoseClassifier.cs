@@ -47,6 +47,12 @@ namespace Game.HandTracking
             [Tooltip("親指の上向き/下向き判定の不感帯。指付け根の並び(MCP行)の高さから、手の大きさ(手首〜中指付け根の" +
                 "距離)に対してこの割合以上ズレていたら上/下と判定する(ThumbUp/ThumbDownの区別に使う)")]
             public float ThumbDirectionMargin;
+            [Tooltip("ThumbUp/ThumbDown判定時、この直線度を超える指が1本でもあれば「明らかに他の指が伸びている」" +
+                "とみなしキャンセルする(通常のFingerExtendStraightnessよりずっと厳しい基準にすること)。" +
+                "ThumbDown時は掌がカメラを向くのに対しThumbUp時は逆を向くことが多く、他4指の屈曲判定が" +
+                "オクルージョンでブレやすいため、ThumbUp/Downの成立条件そのものには他4指の屈曲を要求しない" +
+                "(親指の向きだけで判定する)代わりに、この閾値でのみ誤検出を防ぐ")]
+            public float ClearlyExtendedStraightness;
 
             public static Thresholds Default => new Thresholds
             {
@@ -57,6 +63,7 @@ namespace Game.HandTracking
                 ThumbExtendRatio = 1.12f,
                 ThumbCurlRatio = 1.00f,
                 ThumbDirectionMargin = 0.3f,
+                ClearlyExtendedStraightness = 0.90f,
             };
         }
 
