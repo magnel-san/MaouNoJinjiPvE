@@ -1748,9 +1748,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca9195c9bf8e1b348a7619b8985d6029, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.MapBounds
-  MinCorner: {x: -20, y: -20}
-  MaxCorner: {x: 20, y: 20}
-  DangerMargin: 3
+  MinCorner: {x: -50, y: -50}
+  MaxCorner: {x: 50, y: 50}
+  DangerMargin: 30
   FallDeathY: -10
   _showBoundsInGame: 1
   _lineWidth: 0.3
