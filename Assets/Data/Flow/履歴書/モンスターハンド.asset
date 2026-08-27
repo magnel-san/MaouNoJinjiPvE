@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffa10b775d96e1c428a09ed5ce6456e9, type: 3}
+  m_Name: "\u30E2\u30F3\u30B9\u30BF\u30FC\u30CF\u30F3\u30C9"
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Flow.CharacterRecruitOption
+  DisplayName: "\u30E2\u30F3\u30B9\u30BF\u30FC\u30CF\u30F3\u30C9"
+  ResumeSprite: {fileID: 21300000, guid: 7a9236ed1b4a3e54ea763dbeffade0d1, type: 3}
+  CharacterPrefab: {fileID: 2454251485106057217, guid: 2b3ee3a4b4327924686c81bdfdb8c6c0, type: 3}

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b67efa35b2d5ce48a42b63a93f8e569, type: 3}
+  m_Name: RecruitPool
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Flow.RecruitPool
+  Options:
+  - {fileID: 11400000, guid: 1929d73c0b14e534e988dec03371fe6b, type: 2}
+  - {fileID: 11400000, guid: 00d317352f697ee4fb1d567eda3ba2ce, type: 2}
+  - {fileID: 11400000, guid: b87bb024deaecc64892d5f10a98dc6cc, type: 2}
+  - {fileID: 11400000, guid: 32b04fef56db3914795b43efcb572ba7, type: 2}
+  - {fileID: 11400000, guid: 0e6c59448b1d7874da36cf97ce57089f, type: 2}
+  - {fileID: 11400000, guid: 983bbbf4171122a4eab525990807698d, type: 2}
+  - {fileID: 11400000, guid: 7095dff72e63101409e4fd4afcdfec51, type: 2}
+  - {fileID: 11400000, guid: 5281226e68641e3469285a619a14ecd7, type: 2}
+  - {fileID: 11400000, guid: bc09c777c3f358243911b93392298e22, type: 2}
+  - {fileID: 11400000, guid: 78e2545eea85e32478f7082d401d7949, type: 2}
+  - {fileID: 11400000, guid: 1d904e35ea167134da402ffd06a50bc0, type: 2}
+  - {fileID: 11400000, guid: bb2be333ba10a624d8e519ad413545de, type: 2}
+  - {fileID: 11400000, guid: 45b3b47361027a645ab5ca89e46c7215, type: 2}
