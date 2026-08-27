@@ -12,7 +12,7 @@ namespace Game
     // MediaPipe側の追加設定は不要。
     //
     // 利き手(HandPreference、ゲーム開始直後にHandPreferenceSelectUIで選択済み)のパーム中心を
-    // カーソル位置とし、その手の静的な形(人差し指のみ/パー/チョキ/グッドサイン)で
+    // カーソル位置とし、その手の静的な形(人差し指のみ/パー/グッドサイン/バッドサイン)で
     // keyboard1〜4相当のコマンドを決定する。それとは別に、左右両方の手が同時に検出できた場合のみ
     // 「両手パーを2秒キープ」を判定し、keyboard6相当(必殺技)をUltimateGaugeControllerへ直接要求する
     // (こちらは利き手に関係なく両手を見る)。
@@ -24,11 +24,12 @@ namespace Game
     // 別の閾値を使う)を掛けているため、_leftFingerState/_rightFingerStateに前フレームの状態を保持し、
     // 毎フレームHandPoseClassifier.GetFingerStateへ渡す。
     //
-    // 回復はもともとILoveYouサイン(親指+人差し指+小指を伸ばす)を使っていたが、3指同時の複合判定は
-    // どれか1本でもずれると成立しないため実機での検出率が低く、親指のみ伸展+方向(上/下)という
-    // より単純な判定のバッドサイン(親指下向き、ThumbDown)に置き換えた。グッドサイン(ThumbUp)と
-    // 判定条件(指の伸展/屈曲パターン)自体は同じで、親指の向きだけで区別する(ClassifyPose参照)。
-    // 上記の離散コマンドとは別枠の「持続効果」として扱い、出している間ずっと味方全体を
+    // 回復はもともとILoveYouサイン(親指+人差し指+小指を伸ばす)→バッドサイン(親指下向き)と経てきたが、
+    // 実機での検出率(反応の良さ)を踏まえ、最も安定して認識できるチョキに割り当てた。
+    // それに伴いチョキが担っていた「ボス集中攻撃」はバッドサイン(ThumbDown)に、
+    // グッドサイン(ThumbUp)は元々の「ボス以外集中攻撃(雑魚攻撃)」のまま、という組み合わせにしている
+    // (ClassifyPose/PoseLabel/ApplyCommand参照)。
+    // 回復は上記の離散コマンドとは別枠の「持続効果」として扱い、出している間ずっと味方全体を
     // 微量回復し続ける(UpdateHealPulse参照)。
     //
     // コマンドが新しく確定した瞬間、および回復が開始した瞬間にCommandAnnouncerで
@@ -144,8 +145,8 @@ namespace Game
             // 利き手に関係なく、両手が同時にパーであるかどうかを見る(必殺技の発動条件)。
             UpdateBothHandsHold(leftPose == HandPose.OpenPalm && rightPose == HandPose.OpenPalm);
 
-            // バッドサインも利き手に関係なく、どちらかの手で出ていれば回復し続ける(離散コマンドとは独立)。
-            UpdateHealPulse(leftPose == HandPose.ThumbDown || rightPose == HandPose.ThumbDown);
+            // チョキも利き手に関係なく、どちらかの手で出ていれば回復し続ける(離散コマンドとは独立)。
+            UpdateHealPulse(leftPose == HandPose.Scissors || rightPose == HandPose.Scissors);
 
             if (selectedIndex < 0)
             {
@@ -186,7 +187,7 @@ namespace Game
             }
         }
 
-        // バッドサインを出している間、味方全体(Team.Player)を毎フレームdeltaTime分だけ回復し続ける。
+        // チョキを出している間、味方全体(Team.Player)を毎フレームdeltaTime分だけ回復し続ける。
         // 開始した瞬間だけCommandAnnouncerで通知する(毎フレーム通知すると連呼になるため)。
         void UpdateHealPulse(bool active)
         {
@@ -235,14 +236,14 @@ namespace Game
             return HandPose.None;
         }
 
-        // ApplyCommandと対になる、CommandAnnouncer用の表示名。ThumbDown(回復)はUpdateHealPulseが
+        // ApplyCommandと対になる、CommandAnnouncer用の表示名。Scissors(回復)はUpdateHealPulseが
         // 独自に「回復」を通知するため、ここではnull(無表示)にして二重通知を避ける。
         static string PoseLabel(HandPose pose) => pose switch
         {
             HandPose.IndexOnly => "集合",
             HandPose.OpenPalm => "退避",
-            HandPose.Scissors => "ボス集中攻撃",
             HandPose.ThumbUp => "ボス以外集中攻撃",
+            HandPose.ThumbDown => "ボス集中攻撃",
             _ => null,
         };
 
@@ -298,11 +299,11 @@ namespace Game
                 case HandPose.OpenPalm:
                     BattleCommandState.SubmitGesture(PlayerCommandType.Flee, groundPos, FocusFireFilter.None);
                     break;
-                case HandPose.Scissors:
-                    BattleCommandState.SubmitGesture(PlayerCommandType.None, groundPos, FocusFireFilter.BossOnly);
-                    break;
                 case HandPose.ThumbUp:
                     BattleCommandState.SubmitGesture(PlayerCommandType.None, groundPos, FocusFireFilter.ExcludeBoss);
+                    break;
+                case HandPose.ThumbDown:
+                    BattleCommandState.SubmitGesture(PlayerCommandType.None, groundPos, FocusFireFilter.BossOnly);
                     break;
                 default:
                     BattleCommandState.SubmitGesture(PlayerCommandType.None, groundPos, FocusFireFilter.None);

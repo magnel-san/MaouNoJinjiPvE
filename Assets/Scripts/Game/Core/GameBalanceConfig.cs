@@ -42,6 +42,16 @@ namespace Game
         public FiveTierFloat ChainLightningCooldown = new FiveTierFloat { Tier1 = 6f, Tier2 = 5f, Tier3 = 4f, Tier4 = 3f, Tier5 = 2.2f };
         public FiveTierFloat ChainLightningDamage = new FiveTierFloat { Tier1 = 10, Tier2 = 15, Tier3 = 20, Tier4 = 25, Tier5 = 33 };
 
+        [Header("勇者/モンスター 強化倍率")]
+        [Tooltip("勇者(CharacterIdentity.IsHero=true)のMaxHPに掛ける倍率")]
+        public float HeroMaxHPMultiplier = 2f;
+        [Tooltip("勇者(CharacterIdentity.IsHero=true)の攻撃力(CharacterStats.AttackPower)に掛ける倍率")]
+        public float HeroAttackPowerMultiplier = 2f;
+        [Tooltip("モンスター(勇者以外の全キャラ。ボスも含む)のMaxHPに掛ける倍率")]
+        public float MonsterMaxHPMultiplier = 1f;
+        [Tooltip("モンスター(勇者以外の全キャラ。ボスも含む)の攻撃力(CharacterStats.AttackPower)に掛ける倍率")]
+        public float MonsterAttackPowerMultiplier = 1f;
+
         [Header("ボス")]
         public float BossMaxHP = 2200f;
         [Tooltip("衝撃波の再発動間隔(秒)")]

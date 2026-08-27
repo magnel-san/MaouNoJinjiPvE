@@ -80,8 +80,8 @@ namespace Game.HandTracking
             titleText.color = Color.white;
             titleText.raycastTarget = false;
 
-            rightButton = BuildChoiceButton(canvas.transform, "右手", new Vector2(-220f, -20f));
-            leftButton = BuildChoiceButton(canvas.transform, "左手", new Vector2(220f, -20f));
+            rightButton = BuildChoiceButton(canvas.transform, "右手", new Vector2(220f, -20f));
+            leftButton = BuildChoiceButton(canvas.transform, "左手", new Vector2(-220f, -20f));
         }
 
         HoldToActivateButton BuildChoiceButton(Transform parent, string label, Vector2 anchoredPos)

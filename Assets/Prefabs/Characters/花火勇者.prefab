@@ -88,6 +88,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterIdentity
   Team: 0
   IsBoss: 0
+  IsHero: 1
 --- !u!114 &486977646743059394
 MonoBehaviour:
   m_ObjectHideFlags: 0

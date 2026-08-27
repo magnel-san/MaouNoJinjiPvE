@@ -3,7 +3,11 @@ using UnityEngine;
 namespace Game
 {
     // 攻撃力・質量・移動速度は5段階のTierでGameBalanceConfigから解決する。
+    // MaxHP・AttackPowerには、CharacterIdentity.IsHeroに応じてGameBalanceConfigの
+    // Hero/Monster倍率(HeroMaxHPMultiplier等)も掛かる(勇者プレファブとそれ以外の全キャラ=モンスターを
+    // 一括で強化/弱化するための共通ノブ。Awake参照)。
     [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(CharacterIdentity))]
     public class CharacterStats : MonoBehaviour
     {
         [Header("5段階設定 (GameBalanceConfig参照)")]
@@ -40,10 +44,15 @@ namespace Game
         void Awake()
         {
             var rb = GetComponent<Rigidbody>();
+            var isHero = GetComponent<CharacterIdentity>().IsHero;
             var cfg = GameBalanceConfig.Instance;
             if (cfg != null)
             {
-                AttackPower = cfg.AttackPower.Get(AttackPowerTier);
+                var hpMultiplier = isHero ? cfg.HeroMaxHPMultiplier : cfg.MonsterMaxHPMultiplier;
+                var attackMultiplier = isHero ? cfg.HeroAttackPowerMultiplier : cfg.MonsterAttackPowerMultiplier;
+
+                MaxHP *= hpMultiplier;
+                AttackPower = cfg.AttackPower.Get(AttackPowerTier) * attackMultiplier;
                 MoveSpeed = cfg.MoveSpeed.Get(MoveSpeedTier);
                 rb.mass = cfg.Mass.Get(MassTier);
             }

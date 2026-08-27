@@ -187,8 +187,12 @@ namespace Game
                 var instance = Instantiate(prefab, spawnPos, Quaternion.identity);
                 var summonIdentity = instance.GetComponent<CharacterIdentity>();
                 if (summonIdentity != null) summonIdentity.Team = Team.Enemy;
-                // 召喚は戦闘フェーズ中(全体活性化済み)にのみ発生するため、CharacterActivationの
-                // 待機処理は不要(ActiveOnStartの既定どおり即座に動き出してよい)。
+                // 召喚体はGameFlowManager.SetAllCharactersActive(true)の一括活性化(戦闘開始時に1回だけ実行済み)の
+                // 対象になれない(その時点でまだ存在しないため)。プレハブのActiveOnStartがfalseの場合、
+                // 何もしないとCharacterActivation.Start()が1フレーム後に移動コンポーネントを無効化したまま
+                // 誰も再度有効化せず、召喚された敵が一切動かなくなる不具合があったため、ここで明示的に有効化する。
+                var summonActivation = instance.GetComponent<CharacterActivation>();
+                if (summonActivation != null) summonActivation.SetActive(true);
 
                 CombatFx.ImpactBurst(spawnPos + Vector3.up * 0.5f, SummonColor, 0.35f);
             }

@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ffa10b775d96e1c428a09ed5ce6456e9, type: 3}
-  m_Name: "オーロラクラゲ"
+  m_Name: "\u30AA\u30FC\u30ED\u30E9\u30AF\u30E9\u30B2"
   m_EditorClassIdentifier: Assembly-CSharp::Game.Flow.CharacterRecruitOption
-  DisplayName: "オーロラクラゲ"
-  ResumeSprite: {fileID: 21300000, guid: 7a9236ed1b4a3e54ea763dbeffade0d1, type: 3}
+  DisplayName: "\u30AA\u30FC\u30ED\u30E9\u30AF\u30E9\u30B2"
+  ResumeSprite: {fileID: 21300000, guid: 1c8ba21789bee824a9b94c2224716a2b, type: 3}
   CharacterPrefab: {fileID: 122765979329845903, guid: 7f3a4ae982ac4babb8bfc56a10b6015f, type: 3}

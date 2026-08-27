@@ -56,6 +56,18 @@ PrefabInstance:
       propertyPath: GhostVisualRoot
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 9102272971443289666, guid: 2d0dc30fda974e44e993029cf7c9f4b9, type: 3}
+      propertyPath: MaxHP
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 9102272971443289666, guid: 2d0dc30fda974e44e993029cf7c9f4b9, type: 3}
+      propertyPath: AttackPowerMultiplier
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199820578134820397, guid: 2d0dc30fda974e44e993029cf7c9f4b9, type: 3}
+      propertyPath: IsHero
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 1008882674921881711, guid: 2d0dc30fda974e44e993029cf7c9f4b9, type: 3}

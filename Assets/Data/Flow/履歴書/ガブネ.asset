@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: "\u30AC\u30D6\u30CD"
   m_EditorClassIdentifier: Assembly-CSharp::Game.Flow.CharacterRecruitOption
   DisplayName: "\u30AC\u30D6\u30CD"
-  ResumeSprite: {fileID: 21300000, guid: 7a9236ed1b4a3e54ea763dbeffade0d1, type: 3}
+  ResumeSprite: {fileID: 21300000, guid: 722dd2e6857e00d4185def0e107d1f99, type: 3}
   CharacterPrefab: {fileID: 7962650478310693354, guid: 490413c3353b2f24d89bc934e7e7f9af, type: 3}

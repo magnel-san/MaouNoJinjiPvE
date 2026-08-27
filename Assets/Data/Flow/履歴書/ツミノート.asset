@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ffa10b775d96e1c428a09ed5ce6456e9, type: 3}
-  m_Name: "ツミノート"
+  m_Name: "\u30C4\u30DF\u30CE\u30FC\u30C8"
   m_EditorClassIdentifier: Assembly-CSharp::Game.Flow.CharacterRecruitOption
-  DisplayName: "ツミノート"
-  ResumeSprite: {fileID: 21300000, guid: 7a9236ed1b4a3e54ea763dbeffade0d1, type: 3}
+  DisplayName: "\u30C4\u30DF\u30CE\u30FC\u30C8"
+  ResumeSprite: {fileID: 21300000, guid: 9c197bc657f12b94ead564030f352a79, type: 3}
   CharacterPrefab: {fileID: 122765979329845903, guid: 8502abba097946c8ba801473ae628ea0, type: 3}

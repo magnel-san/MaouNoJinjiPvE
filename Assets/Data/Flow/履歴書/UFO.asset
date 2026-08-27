@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: UFO
   m_EditorClassIdentifier: Assembly-CSharp::Game.Flow.CharacterRecruitOption
   DisplayName: UFO
-  ResumeSprite: {fileID: 21300000, guid: 7a9236ed1b4a3e54ea763dbeffade0d1, type: 3}
+  ResumeSprite: {fileID: 21300000, guid: 92d9c6c73a7eae0479606816dacdb666, type: 3}
   CharacterPrefab: {fileID: 1757535344258573661, guid: d0b949ae8f1a4a95a5b0960c06b4bb47, type: 3}

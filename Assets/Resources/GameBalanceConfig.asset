@@ -102,22 +102,26 @@ MonoBehaviour:
     Tier3: 20
     Tier4: 25
     Tier5: 33
+  HeroMaxHPMultiplier: 2
+  HeroAttackPowerMultiplier: 2
+  MonsterMaxHPMultiplier: 1
+  MonsterAttackPowerMultiplier: 1
   BossMaxHP: 2200
   BossShockwaveCooldown: 7
   BossShockwaveRadius: 6
-  BossShockwaveDamage: 15
-  BossShockwaveKnockback: 25
+  BossShockwaveDamage: 10
+  BossShockwaveKnockback: 30
   BossTelegraphCooldown: 5
   BossTelegraphWarningSeconds: 1.3
   BossTelegraphRadius: 2.5
-  BossTelegraphDamage: 20
+  BossTelegraphDamage: 8
   BossTelegraphMinZones: 1
   BossTelegraphMaxZones: 3
   BossSummonCooldown: 12
-  BossSummonMinCount: 2
+  BossSummonMinCount: 1
   BossSummonMaxCount: 3
-  BossSummonMaxConcurrent: 6
+  BossSummonMaxConcurrent: 4
   BossRoundMultiplier:
   - 1
-  - 1.7
-  - 2.6
+  - 1.5
+  - 2

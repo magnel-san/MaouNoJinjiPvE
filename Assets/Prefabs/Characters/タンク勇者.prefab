@@ -87,6 +87,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterIdentity
   Team: 0
+  IsBoss: 0
+  IsHero: 1
 --- !u!114 &8420159696726126140
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -119,6 +121,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterHealth
   DamageReductionPercent: 0
   FallDeathDespawnDelay: 3
+  HitSound: {fileID: 0}
+  DeathSound: {fileID: 0}
 --- !u!114 &1845850657236701285
 MonoBehaviour:
   m_ObjectHideFlags: 0

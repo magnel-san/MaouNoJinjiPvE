@@ -50,8 +50,10 @@ namespace Game.HandTracking
 
             public static Thresholds Default => new Thresholds
             {
-                FingerExtendStraightness = 0.82f,
-                FingerCurlStraightness = 0.72f,
+                // 実機のデバッグ表示で、パー(5指伸展)時に指の最低値が0.75程度まで下がる観測結果があったため、
+                // 余裕を持って0.70/0.60に緩和した(初期値0.88/0.78では厳しすぎてパーが成立しなかった)。
+                FingerExtendStraightness = 0.70f,
+                FingerCurlStraightness = 0.60f,
                 ThumbExtendRatio = 1.12f,
                 ThumbCurlRatio = 1.00f,
                 ThumbDirectionMargin = 0.3f,
