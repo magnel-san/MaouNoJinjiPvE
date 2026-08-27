@@ -28,7 +28,7 @@ namespace Game
             line.positionCount = 2;
             line.SetPosition(0, from);
             line.SetPosition(1, to);
-            line.widthMultiplier = 0.1f;
+            line.widthMultiplier = 0.2f;
             line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             line.receiveShadows = false;
             line.material = new Material(VfxShaderUtil.GetUnlitShader()) { color = color };

@@ -34,7 +34,7 @@ namespace Game
             line.useWorldSpace = false;
             line.loop = true;
             line.positionCount = 48;
-            line.widthMultiplier = 0.12f;
+            line.widthMultiplier = 0.22f;
             line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             line.receiveShadows = false;
 

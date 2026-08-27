@@ -138,8 +138,8 @@ namespace Game
                 _mesh = gameObject.AddComponent<TextMesh>();
                 _mesh.text = text;
                 _mesh.color = color;
-                _mesh.characterSize = 0.12f;
-                _mesh.fontSize = 48;
+                _mesh.characterSize = 0.2f;
+                _mesh.fontSize = 72;
                 _mesh.anchor = TextAnchor.MiddleCenter;
                 _mesh.alignment = TextAlignment.Center;
                 _mesh.font = VfxShaderUtil.GetDefaultFont();

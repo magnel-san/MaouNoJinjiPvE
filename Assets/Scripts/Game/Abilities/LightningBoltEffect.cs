@@ -27,7 +27,7 @@ namespace Game
             line = gameObject.AddComponent<LineRenderer>();
             line.useWorldSpace = true;
             line.positionCount = Segments + 1;
-            line.widthMultiplier = 0.08f;
+            line.widthMultiplier = 0.16f;
             line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             line.receiveShadows = false;
             line.material = new Material(VfxShaderUtil.GetUnlitShader()) { color = color };
