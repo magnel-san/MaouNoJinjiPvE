@@ -1817,7 +1817,7 @@ MonoBehaviour:
   _leftHandPrefab: {fileID: 6052551301130859096, guid: f399fee7ff7826449970314df8f33e63, type: 3}
   _handsParent: {fileID: 0}
   _delegate: 0
-  _modelAssetPath: gesture_recognizer.bytes
+  _modelAssetPath: hand_landmarker.bytes
   _numHands: 2
   _minHandDetectionConfidence: 0.5
   _minHandPresenceConfidence: 0.5
@@ -3539,6 +3539,9 @@ MonoBehaviour:
   _groundHeight: 0
   _trackingCamera: {fileID: 330585545}
   _poseConfirmSeconds: 0.12
+  _thresholds:
+    FingerExtendRatio: 1.2
+    ThumbExtendRatio: 1.15
   _bothHandsOpenHoldSeconds: 2
   _healPerSecond: 20
 --- !u!114 &1951362741
