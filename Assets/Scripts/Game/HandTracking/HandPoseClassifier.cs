@@ -131,10 +131,18 @@ namespace Game.HandTracking
             wasExtended ? value > curlThreshold : value > extendThreshold;
 
         // 親指先(ランドマーク4番)が、4指の付け根(MCP行)の高さに対して上にあるか下にあるかを判定する。
-        // MediaPipeのワールドランドマークはY:下方向が正の座標系なので、指先のYがMCP行の平均Yより
-        // 十分小さければ上向き(Up)、十分大きければ下向き(Down)、差が小さければどちらとも言えないNeutral。
-        // 手首〜中指付け根の距離を「手の大きさ」の目安にしてマージンをスケールすることで、
-        // カメラからの距離や手の大小に依存しない判定にしている。
+        //
+        // 符号の根拠: このプラグインのHandTrackingController.ApplyPose(_trackingCamera未設定時)は、
+        // ワールドランドマークのYをConvertToUnityVectorで一切反転せず(_mirrorY=trueは「反転を無効化」の意味)
+        // そのままUnityのworld Y(上が正)へ使っており、実機で手を上げるとモデルが正しく上に動くことを
+        // 確認済み。つまりこのプラグインが返すワールドランドマークはY値が大きいほど物理的に上になる
+        // (一般的なMediaPipeの「正規化画像座標はY下方向が正」の規約とは異なる)。
+        // 以前この関数は逆符号(Y下方向が正)を前提にしており、ThumbUp/ThumbDownの判定が入れ替わって
+        // しまっていた(実機テストでThumbDownしか反応せずThumbUpが全く反応しないバグとして発覚、修正済み)。
+        //
+        // 指先のYがMCP行の平均Yより十分大きければ上向き(Up)、十分小さければ下向き(Down)、
+        // 差が小さければどちらとも言えないNeutral。手首〜中指付け根の距離を「手の大きさ」の目安にして
+        // マージンをスケールすることで、カメラからの距離や手の大小に依存しない判定にしている。
         public static ThumbDirection GetThumbDirection(IReadOnlyList<Vector3> lm, float marginRatio)
         {
             if (lm == null || lm.Count < 21) return ThumbDirection.Neutral;
@@ -146,8 +154,8 @@ namespace Game.HandTracking
             var deltaY = lm[4].y - mcpRowY;
             var margin = handSpan * marginRatio;
 
-            if (deltaY < -margin) return ThumbDirection.Up;
-            if (deltaY > margin) return ThumbDirection.Down;
+            if (deltaY > margin) return ThumbDirection.Up;
+            if (deltaY < -margin) return ThumbDirection.Down;
             return ThumbDirection.Neutral;
         }
     }
