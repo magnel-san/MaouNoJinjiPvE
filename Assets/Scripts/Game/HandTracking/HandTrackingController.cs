@@ -3,7 +3,7 @@ using System.Collections;
 using Mediapipe;
 using Mediapipe.Tasks.Components.Containers;
 using Mediapipe.Tasks.Core;
-using Mediapipe.Tasks.Vision.HandLandmarker;
+using Mediapipe.Tasks.Vision.GestureRecognizer;
 using Mediapipe.Unity;
 using Mediapipe.Unity.Experimental;
 using Mediapipe.Unity.Sample;
@@ -17,15 +17,14 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 namespace Game.HandTracking
 {
   /// <summary>
-  /// MediaPipe HandLandmarkerを起動し、検出結果（21ランドマーク×左右手）を
+  /// MediaPipe GestureRecognizerを起動し、検出結果（21ランドマーク×左右手＋定番ジェスチャー分類）を
   /// 手モデル（HandBoneRig）にリターゲットする。
   /// 左手モデルのみをプレハブとして持ち、右手はスケールX反転でミラー生成する。
   ///
-  /// NOTE: 一時的にMediaPipe GestureRecognizer(gesture_recognizer.bytes)へ切り替えたが、
-  /// 同梱のネイティブライブラリとモデルのバージョン不整合で
-  /// 「BadStatusException: NOT_FOUND: No file with name: hand_landmarker.task」が発生し
-  /// ロードに失敗したため、確実に動作するHandLandmarkerへ戻した。ジェスチャー判定は
-  /// HandPoseClassifierによる自前の幾何学的判定(BattleGestureInputController参照)で行う。
+  /// HandLandmarkerからの切り替え理由: GestureRecognizerはHandLandmarkerと同じ21ランドマーク
+  /// （handLandmarks/handWorldLandmarks/handedness）に加え、学習済みの定番ジェスチャー分類
+  /// （Open_Palm/Victory/Pointing_Up等、7種）も同じ1パスで返す。ランドマークの距離比だけで
+  /// 自前判定するより頑健なため、ランドマーク取得元をこちらに一本化した。
   ///
   /// リターゲット方式（回転駆動、レストポーズ基準）:
   /// 各ボーンの「レスト状態（Awake時点の回転・ワールド前方向）」をキャッシュしておき、
@@ -34,7 +33,7 @@ namespace Game.HandTracking
   /// 拘束しないため誤差が蓄積して指が捻れていくが、常にレスト状態基準で計算し直すことで
   /// 誤差が蓄積しない。
   ///
-  /// 検出結果は<see cref="OnHandLandmarkerResult"/>イベントとしても公開し、
+  /// 検出結果は<see cref="OnGestureRecognizerResult"/>イベントとしても公開し、
   /// 他のジェスチャー認識等が同じ検出結果を購読できるようにする（パイプラインは1本化）。
   /// </summary>
   public class HandTrackingController : MonoBehaviour
@@ -52,7 +51,7 @@ namespace Game.HandTracking
 #else
       BaseOptions.Delegate.GPU;
 #endif
-    [SerializeField] private string _modelAssetPath = "hand_landmarker.bytes";
+    [SerializeField] private string _modelAssetPath = "gesture_recognizer.bytes";
     [SerializeField] private int _numHands = 2;
     [SerializeField, Range(0f, 1f)] private float _minHandDetectionConfidence = 0.5f;
     [SerializeField, Range(0f, 1f)] private float _minHandPresenceConfidence = 0.5f;
@@ -98,7 +97,7 @@ namespace Game.HandTracking
       "Assets/MediaPipeUnity/Samples/Resources/Bootstrap.prefab を指定する。")]
     [SerializeField] private GameObject _bootstrapPrefab;
 
-    private HandLandmarker _taskApi;
+    private GestureRecognizer _taskApi;
     private HandBoneRig _leftHandInstance;
     private HandBoneRig _rightHandInstance;
     private HandRetargetState _leftState;
@@ -106,8 +105,8 @@ namespace Game.HandTracking
     private TextureFramePool _textureFramePool;
     private Coroutine _runCoroutine;
 
-    /// <summary>MediaPipeの検出結果が届くたびに発火する。ジェスチャー認識等が購読する。</summary>
-    public event Action<HandLandmarkerResult> OnHandLandmarkerResult;
+    /// <summary>MediaPipeの検出結果（ランドマーク＋定番ジェスチャー分類）が届くたびに発火する。ジェスチャー認識等が購読する。</summary>
+    public event Action<GestureRecognizerResult> OnGestureRecognizerResult;
 
     public HandBoneRig LeftHandInstance => _leftHandInstance;
     public HandBoneRig RightHandInstance => _rightHandInstance;
@@ -177,10 +176,10 @@ namespace Game.HandTracking
 
       yield return AssetLoader.PrepareAssetAsync(_modelAssetPath);
 
-      // NOTE: VIDEOモード＋TryDetectForVideoによる同期取得を使う。
+      // NOTE: VIDEOモード＋TryRecognizeForVideoによる同期取得を使う。
       // LIVE_STREAM＋非同期コールバックは、コールバックがどのスレッドで呼ばれるかに気を配る必要があり、
       // 不要な複雑さの原因になっていた。
-      var options = new HandLandmarkerOptions(
+      var options = new GestureRecognizerOptions(
         new BaseOptions(_delegate, modelAssetPath: _modelAssetPath),
         runningMode: VisionRunningMode.VIDEO,
         numHands: _numHands,
@@ -188,7 +187,7 @@ namespace Game.HandTracking
         minHandPresenceConfidence: _minHandPresenceConfidence,
         minTrackingConfidence: _minTrackingConfidence);
 
-      _taskApi = HandLandmarker.CreateFromOptions(options, GpuManager.GpuResources);
+      _taskApi = GestureRecognizer.CreateFromOptions(options, GpuManager.GpuResources);
 
       var imageSource = ImageSourceProvider.ImageSource;
       yield return imageSource.Play();
@@ -207,7 +206,7 @@ namespace Game.HandTracking
       var imageProcessingOptions = new ImageProcessingOptions(rotationDegrees: (int)transformationOptions.rotationAngle);
 
       var stopwatch = Stopwatch.StartNew();
-      var result = HandLandmarkerResult.Alloc(_numHands);
+      var result = GestureRecognizerResult.Alloc(_numHands);
 
       while (true)
       {
@@ -225,9 +224,9 @@ namespace Game.HandTracking
         var image = textureFrame.BuildCPUImage();
         textureFrame.Release();
 
-        if (_taskApi.TryDetectForVideo(image, stopwatch.ElapsedMilliseconds, imageProcessingOptions, ref result))
+        if (_taskApi.TryRecognizeForVideo(image, stopwatch.ElapsedMilliseconds, imageProcessingOptions, ref result))
         {
-          OnHandLandmarkerResult?.Invoke(result);
+          OnGestureRecognizerResult?.Invoke(result);
           RetargetToBones(result);
         }
 
@@ -286,7 +285,7 @@ namespace Game.HandTracking
       return false;
     }
 
-    private void RetargetToBones(HandLandmarkerResult result)
+    private void RetargetToBones(GestureRecognizerResult result)
     {
       // その回検出されなかった手のキャッシュは必ずクリアする。クリアしないと、
       // 一度でも検出された手のデータがいつまでも残り続け、後から別の手だけを映しても
@@ -350,7 +349,7 @@ namespace Game.HandTracking
     /// Left/Rightを出力する仕様。このプロジェクトのパイプラインはその前提通りに鏡像化されていないため、
     /// 実際の手と分類結果が左右逆になる。そのため判定を反転させている。
     /// </summary>
-    private bool IsRightHand(HandLandmarkerResult result, int index)
+    private bool IsRightHand(GestureRecognizerResult result, int index)
     {
       if (result.handedness == null || index >= result.handedness.Count) return false;
       var classifications = result.handedness[index];
