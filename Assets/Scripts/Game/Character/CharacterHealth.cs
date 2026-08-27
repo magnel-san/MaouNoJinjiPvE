@@ -121,7 +121,9 @@ namespace Game
                 }
             }
 
-            if (rb != null)
+            // isKinematicなRigidbody(ボス等)に速度を設定しようとするとUnityが警告を出すため、
+            // 物理で動いている(=isKinematicでない)場合のみ止める。
+            if (rb != null && !rb.isKinematic)
             {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
