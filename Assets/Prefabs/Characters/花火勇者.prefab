@@ -121,8 +121,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterHealth
   DamageReductionPercent: 0
   FallDeathDespawnDelay: 3
-  HitSound: {fileID: 0}
-  DeathSound: {fileID: 0}
+  HitSound: {fileID: 8300000, guid: 4322f517e2fe6a94fbce5f148f83d6a3, type: 3}
+  DeathSound: {fileID: 8300000, guid: 61d902bc0de063644895b26bb8f497f6, type: 3}
 --- !u!114 &5933500288767001713
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -278,7 +278,7 @@ MonoBehaviour:
   ExplosionRadius: 2.5
   KnockbackVector: 20
   FireworkLifetime: 4
-  FireSound: {fileID: 0}
+  FireSound: {fileID: 8300000, guid: bfb5d58a5464f5c45a2604ca5af01637, type: 3}
 --- !u!114 &9138855154688092406
 MonoBehaviour:
   m_ObjectHideFlags: 0

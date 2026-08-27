@@ -178,6 +178,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterIdentity
   Team: 0
   IsBoss: 0
+  IsHero: 0
 --- !u!114 &7779307700175955692
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -210,8 +211,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterHealth
   DamageReductionPercent: 0
   FallDeathDespawnDelay: 3
-  HitSound: {fileID: 0}
-  DeathSound: {fileID: 0}
+  HitSound: {fileID: 8300000, guid: 4322f517e2fe6a94fbce5f148f83d6a3, type: 3}
+  DeathSound: {fileID: 8300000, guid: 61d902bc0de063644895b26bb8f497f6, type: 3}
 --- !u!114 &2492141320429378155
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -358,12 +359,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3f4be7c8a8f7984580e20cbe9ced707, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.FlyingBomberAbility
-  TargetHeight: 10.5
+  TargetHeight: 7.5
   LiftSpringStrength: 30
   LiftDamping: 5
   GroundedHeightThreshold: 0.6
   AttackCooldownTier: 3
-  AttackRange: 4
   PeriodicDescentInterval: 4
   GroundedVulnerableDuration: 3
   HorizontalSpeedMultiplier: 0.55
@@ -372,7 +372,7 @@ MonoBehaviour:
   BombKnockbackVector: 20
   BombDamage: 35
   BombExplosionRadius: 3
-  DropSound: {fileID: 0}
+  DropSound: {fileID: 8300000, guid: 73662708f5589cd43bdaf6cc3aee777e, type: 3}
 --- !u!114 &5518964748320978653
 MonoBehaviour:
   m_ObjectHideFlags: 0

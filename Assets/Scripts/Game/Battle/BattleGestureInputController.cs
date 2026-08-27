@@ -15,7 +15,9 @@ namespace Game
     // カーソル位置とし、その手の静的な形(人差し指のみ/パー/グッドサイン/バッドサイン)で
     // keyboard1〜4相当のコマンドを決定する。それとは別に、左右両方の手が同時に検出できた場合のみ
     // 「両手パーを2秒キープ」を判定し、keyboard6相当(必殺技)をUltimateGaugeControllerへ直接要求する
-    // (こちらは利き手に関係なく両手を見る)。
+    // (こちらは利き手に関係なく両手を見る)。加えて、人差し指+小指のみ伸展(IndexPinky)は
+    // 片手だけでもゲージが溜まっていれば即座に必殺技を要求できる簡易トリガーにしている
+    // (利き手に関係なくどちらかの手で成立すればよい)。
     //
     // NOTE: 一度MediaPipe GestureRecognizer(学習済み定番ジェスチャー分類)へ切り替えたが、
     // バンドル内のhand_landmarker.taskをネイティブ側が解決できずロードに失敗する既知の問題があったため、
@@ -148,6 +150,11 @@ namespace Game
             // チョキも利き手に関係なく、どちらかの手で出ていれば回復し続ける(離散コマンドとは独立)。
             UpdateHealPulse(leftPose == HandPose.Scissors || rightPose == HandPose.Scissors);
 
+            // 人差し指+小指も利き手に関係なく、片手だけで即発動要求できる(両手パー2秒キープの簡易版)。
+            // TryTriggerFromExternal側でIsReady&&!IsBoostActiveを見ているので、ゲージ未満なら何も起きず、
+            // 毎フレーム呼んでも二重発動しない。
+            if (leftPose == HandPose.IndexPinky || rightPose == HandPose.IndexPinky) ultimateGauge?.TryTriggerFromExternal();
+
             if (selectedIndex < 0)
             {
                 UpdateConfirmedPose(HandPose.None);
@@ -239,6 +246,7 @@ namespace Game
             if (!f.Thumb && f.Index && !f.Middle && !f.Ring && !f.Pinky) return HandPose.IndexOnly;
             if (f.Index && f.Middle && f.Ring && f.Pinky) return HandPose.OpenPalm;
             if (!f.Thumb && f.Index && f.Middle && !f.Ring && !f.Pinky) return HandPose.Scissors;
+            if (!f.Thumb && f.Index && !f.Middle && !f.Ring && f.Pinky) return HandPose.IndexPinky;
 
             if (thumbDir != HandPoseClassifier.ThumbDirection.Neutral && !AnyClearlyExtended(m, clearlyExtendedThreshold))
                 return thumbDir == HandPoseClassifier.ThumbDirection.Down ? HandPose.ThumbDown : HandPose.ThumbUp;

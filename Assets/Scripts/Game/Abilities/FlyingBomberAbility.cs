@@ -21,7 +21,6 @@ namespace Game
 
         [Header("攻撃")]
         [Range(1, 5)] public int AttackCooldownTier = 3;
-        public float AttackRange = 4f;
 
         [Header("隙 (地上に留まり無防備になる時間)")]
         [Tooltip("何秒飛行するごとに強制的に降下させるか")]
@@ -56,7 +55,10 @@ namespace Game
         {
             rb = GetComponent<Rigidbody>();
             identity = GetComponent<CharacterIdentity>();
-            rangeCollider = TargetingUtility.CreateRangeGizmoCollider(transform, "BomberAttackRange", AttackRange);
+            // 爆弾の投下判定範囲(コライダー半径)は爆発範囲(BombExplosionRadius)と同じにする。
+            // 別々の値だと、投下判定は通ったのに爆風が届かない(その逆も)というズレが起きるため、
+            // 単一の値を共有させて必ず一致させる。
+            rangeCollider = TargetingUtility.CreateRangeGizmoCollider(transform, "BomberAttackRange", BombExplosionRadius);
         }
 
         void FixedUpdate()
@@ -69,8 +71,17 @@ namespace Game
             UpdateFlightState();
 
             cooldownTimer -= Time.fixedDeltaTime;
-            bool targetInRange = target != null &&
-                Vector3.Distance(transform.position, target.transform.position) <= rangeCollider.radius;
+
+            // 高さ(Y)は無視し、XZ平面上の距離だけで範囲判定する。この機体は空中でTargetHeight分
+            // 高い位置に浮いているため、3D距離(Vector3.Distance)で判定すると高さ差だけで
+            // 範囲外になってしまい、地上の敵にほぼ永久に攻撃できなくなる不具合があった。
+            bool targetInRange = false;
+            if (target != null)
+            {
+                var delta = target.transform.position - transform.position;
+                delta.y = 0f;
+                targetInRange = delta.sqrMagnitude <= rangeCollider.radius * rangeCollider.radius;
+            }
 
             if (state == FlightState.Flying && targetInRange && cooldownTimer <= 0f)
             {
@@ -160,11 +171,9 @@ namespace Game
             return true;
         }
 
-        // デバッグ表示用: 選択時のみ攻撃範囲と爆発半径をシーンビューに円で表示する。
+        // デバッグ表示用: 選択時のみ投下判定範囲(=爆発半径)をシーンビューに円で表示する。
         void OnDrawGizmosSelected()
         {
-            Gizmos.color = new Color(1f, 0.85f, 0.2f);
-            TargetingUtility.DrawGizmoCircle(transform.position, AttackRange);
             Gizmos.color = new Color(1f, 0.55f, 0.1f);
             TargetingUtility.DrawGizmoCircle(transform.position, BombExplosionRadius);
         }

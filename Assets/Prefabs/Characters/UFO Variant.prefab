@@ -121,8 +121,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterHealth
   DamageReductionPercent: 0
   FallDeathDespawnDelay: 3
-  HitSound: {fileID: 0}
-  DeathSound: {fileID: 0}
+  HitSound: {fileID: 8300000, guid: 4322f517e2fe6a94fbce5f148f83d6a3, type: 3}
+  DeathSound: {fileID: 8300000, guid: 61d902bc0de063644895b26bb8f497f6, type: 3}
 --- !u!114 &5613781418484772759
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -291,7 +291,7 @@ MonoBehaviour:
   DamageTier: 2
   MaxChainJumps: 2
   ChainJumpRadius: 5
-  ZapSound: {fileID: 0}
+  ZapSound: {fileID: 8300000, guid: af285d9bdcdf81a4aa26c52693c669b2, type: 3}
 --- !u!1 &4663986294565657192
 GameObject:
   m_ObjectHideFlags: 0

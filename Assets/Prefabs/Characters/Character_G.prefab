@@ -88,6 +88,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterIdentity
   Team: 0
   IsBoss: 0
+  IsHero: 0
 --- !u!114 &4140628017493023966
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -120,8 +121,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterHealth
   DamageReductionPercent: 0
   FallDeathDespawnDelay: 3
-  HitSound: {fileID: 0}
-  DeathSound: {fileID: 0}
+  HitSound: {fileID: 8300000, guid: 4322f517e2fe6a94fbce5f148f83d6a3, type: 3}
+  DeathSound: {fileID: 8300000, guid: 61d902bc0de063644895b26bb8f497f6, type: 3}
 --- !u!114 &5202055827527654018
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -277,7 +278,7 @@ MonoBehaviour:
   OrbitHeight: 1
   OrbitSpeed: 220
   SwordPrefab: {fileID: 2455735936849453151, guid: 38e49bb51bf2c5c4f8d0cb25f18c1a2b, type: 3}
-  SummonSound: {fileID: 0}
+  SummonSound: {fileID: 8300000, guid: b274b6e3db9cb7545939ea67661a95fa, type: 3}
 --- !u!114 &5720183059512566684
 MonoBehaviour:
   m_ObjectHideFlags: 0

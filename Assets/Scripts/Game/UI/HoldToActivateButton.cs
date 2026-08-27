@@ -17,6 +17,9 @@ namespace Game.UI
     [SerializeField] private Image _gaugeImage;
     [Tooltip("発火後、自動でゲージをリセットするか")]
     [SerializeField] private bool _resetAfterTrigger = true;
+    [Tooltip("決定(保持完了)時に鳴らすUI効果音。未設定なら無音。このボタン経由の決定操作全て" +
+      "(タイトル/ルール次へ、利き手選択、キャラ採用選択等)に共通で使われる")]
+    [SerializeField] private AudioClip _confirmSound;
 
     public event Action OnTriggered;
     /// <summary>ホバー開始/終了のたびに発火する(true=開始, false=終了)。陣形プレビュー等、保持完了を待たずに使いたい場合用。</summary>
@@ -90,6 +93,7 @@ namespace Game.UI
       _heldSeconds = 0f;
       _triggeredOnce = true;
       UpdateGauge();
+      SfxUtil.PlayUi(_confirmSound);
       OnTriggered?.Invoke();
     }
 

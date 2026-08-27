@@ -117,8 +117,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterHealth
   DamageReductionPercent: 0
   FallDeathDespawnDelay: 3
-  HitSound: {fileID: 0}
-  DeathSound: {fileID: 0}
+  HitSound: {fileID: 8300000, guid: 4322f517e2fe6a94fbce5f148f83d6a3, type: 3}
+  DeathSound: {fileID: 8300000, guid: 61d902bc0de063644895b26bb8f497f6, type: 3}
 --- !u!114 &4973937201088834290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -213,10 +213,10 @@ MonoBehaviour:
   - {fileID: 4847435105812019327, guid: dae6a91b2932daa4aa12ef5e9d1009a1, type: 3}
   - {fileID: 3828963586165506515, guid: c308dfc8e244c4d4fb00a698e9d9ddd1, type: 3}
   _summonSpawnRadius: 4
-  _shockwaveSound: {fileID: 0}
-  _telegraphWarningSound: {fileID: 0}
-  _telegraphDetonateSound: {fileID: 0}
-  _summonSound: {fileID: 0}
+  _shockwaveSound: {fileID: 8300000, guid: 68e3eb5af7b378c429c5337990926065, type: 3}
+  _telegraphWarningSound: {fileID: 8300000, guid: 6d781e949ce5cdb4fbdd23070c4f184a, type: 3}
+  _telegraphDetonateSound: {fileID: 8300000, guid: 103c9df91783ec442ad7066ae7e2bdb5, type: 3}
+  _summonSound: {fileID: 8300000, guid: b7ef3c054192a2a4c9da86c80c943957, type: 3}
 --- !u!114 &5487875094883961232
 MonoBehaviour:
   m_ObjectHideFlags: 0

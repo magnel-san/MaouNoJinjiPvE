@@ -88,6 +88,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterIdentity
   Team: 0
   IsBoss: 0
+  IsHero: 0
 --- !u!114 &3983516008258914586
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -120,8 +121,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterHealth
   DamageReductionPercent: 0
   FallDeathDespawnDelay: 3
-  HitSound: {fileID: 0}
-  DeathSound: {fileID: 0}
+  HitSound: {fileID: 8300000, guid: 4322f517e2fe6a94fbce5f148f83d6a3, type: 3}
+  DeathSound: {fileID: 8300000, guid: 61d902bc0de063644895b26bb8f497f6, type: 3}
 --- !u!114 &8812994004565036816
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -288,7 +289,7 @@ MonoBehaviour:
   HealRange: 5
   HealCooldownTier: 3
   HealAmountTier: 3
-  HealSound: {fileID: 0}
+  HealSound: {fileID: 8300000, guid: 9d162c8e6b492aa45ab1ca2f3db3ba24, type: 3}
 --- !u!1 &7786621170070969104
 GameObject:
   m_ObjectHideFlags: 0
