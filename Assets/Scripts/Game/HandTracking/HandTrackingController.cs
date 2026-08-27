@@ -211,14 +211,10 @@ namespace Game.HandTracking
           continue;
         }
 
-        var req = textureFrame.ReadTextureAsync(imageSource.GetCurrentTexture(), flipHorizontally, flipVertically);
-        yield return new WaitUntil(() => req.done);
-
-        if (req.hasError)
-        {
-          Debug.LogWarning("[HandTrackingController] Failed to read texture from the image source.");
-          continue;
-        }
+        // AsyncGPUReadback(ReadTextureAsync)はMac(Metal)環境で "Failed to read texture" となり
+        // 失敗し続けることが確認されたため、同期のReadPixelsベースのReadTextureOnCPUを使う。
+        // 1フレームだけ余分に待つ代わりに、プラットフォーム依存の非同期GPU読み戻しの不安定さを避ける。
+        textureFrame.ReadTextureOnCPU(imageSource.GetCurrentTexture(), flipHorizontally, flipVertically);
 
         var image = textureFrame.BuildCPUImage();
         textureFrame.Release();
