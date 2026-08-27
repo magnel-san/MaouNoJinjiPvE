@@ -224,6 +224,11 @@ namespace Game.HandTracking
           OnHandLandmarkerResult?.Invoke(result);
           RetargetToBones(result);
         }
+
+        // ReadTextureOnCPUへ切り替えて非同期の待ち(yield return new WaitUntil(() => req.done))が
+        // 無くなったため、ここで明示的に1フレーム分Unity側へ制御を返す。これが無いとコルーチンが
+        // 1フレーム内で無限ループし続け、エディタ/ゲームがフリーズしたように見える(実際に発生した)。
+        yield return new WaitForEndOfFrame();
       }
     }
 
