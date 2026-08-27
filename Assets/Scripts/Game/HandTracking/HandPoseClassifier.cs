@@ -44,15 +44,23 @@ namespace Game.HandTracking
             public float ThumbExtendRatio;
             [Tooltip("親指を「屈曲」に戻すとみなす距離比(ヒステリシス下限。ThumbExtendRatioより小さい値にすること)")]
             public float ThumbCurlRatio;
+            [Tooltip("親指の上向き/下向き判定の不感帯。指付け根の並び(MCP行)の高さから、手の大きさ(手首〜中指付け根の" +
+                "距離)に対してこの割合以上ズレていたら上/下と判定する(ThumbUp/ThumbDownの区別に使う)")]
+            public float ThumbDirectionMargin;
 
             public static Thresholds Default => new Thresholds
             {
-                FingerExtendStraightness = 0.88f,
-                FingerCurlStraightness = 0.78f,
-                ThumbExtendRatio = 1.25f,
-                ThumbCurlRatio = 1.10f,
+                FingerExtendStraightness = 0.82f,
+                FingerCurlStraightness = 0.72f,
+                ThumbExtendRatio = 1.12f,
+                ThumbCurlRatio = 1.00f,
+                ThumbDirectionMargin = 0.3f,
             };
         }
+
+        // 親指が(他4指が屈曲した状態で)上/下どちらを向いているか。ThumbUp(グッドサイン)と
+        // ThumbDown(バッドサイン)を区別するために使う。どちらとも言えない向き(横向き等)はNeutral。
+        public enum ThumbDirection { Neutral, Up, Down }
 
         // 5指それぞれの伸展(true)/屈曲(false)状態。呼び出し側がこれを見て好きな形に組み合わせて判定する。
         public struct FingerState
@@ -119,5 +127,26 @@ namespace Game.HandTracking
         // 伸展のまま、屈曲していた指はextendThresholdを上回るまで屈曲のまま扱う。
         static bool IsExtended(float value, bool wasExtended, float extendThreshold, float curlThreshold) =>
             wasExtended ? value > curlThreshold : value > extendThreshold;
+
+        // 親指先(ランドマーク4番)が、4指の付け根(MCP行)の高さに対して上にあるか下にあるかを判定する。
+        // MediaPipeのワールドランドマークはY:下方向が正の座標系なので、指先のYがMCP行の平均Yより
+        // 十分小さければ上向き(Up)、十分大きければ下向き(Down)、差が小さければどちらとも言えないNeutral。
+        // 手首〜中指付け根の距離を「手の大きさ」の目安にしてマージンをスケールすることで、
+        // カメラからの距離や手の大小に依存しない判定にしている。
+        public static ThumbDirection GetThumbDirection(IReadOnlyList<Vector3> lm, float marginRatio)
+        {
+            if (lm == null || lm.Count < 21) return ThumbDirection.Neutral;
+
+            var handSpan = Vector3.Distance(lm[0], lm[9]);
+            if (handSpan < 1e-6f) return ThumbDirection.Neutral;
+
+            var mcpRowY = (lm[5].y + lm[9].y + lm[13].y + lm[17].y) / 4f;
+            var deltaY = lm[4].y - mcpRowY;
+            var margin = handSpan * marginRatio;
+
+            if (deltaY < -margin) return ThumbDirection.Up;
+            if (deltaY > margin) return ThumbDirection.Down;
+            return ThumbDirection.Neutral;
+        }
     }
 }

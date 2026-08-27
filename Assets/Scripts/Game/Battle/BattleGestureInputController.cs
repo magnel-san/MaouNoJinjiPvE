@@ -19,13 +19,17 @@ namespace Game
     //
     // NOTE: 一度MediaPipe GestureRecognizer(学習済み定番ジェスチャー分類)へ切り替えたが、
     // バンドル内のhand_landmarker.taskをネイティブ側が解決できずロードに失敗する既知の問題があったため、
-    // HandLandmarkerの生ランドマーク＋HandPoseClassifierによる自前の幾何学的判定へ戻した
-    // (ClassifyPose/IsILoveYouShape参照)。HandPoseClassifier側で指ごとにヒステリシス(前フレームの
-    // 伸展/屈曲状態を見て、判定の上げ下げに別の閾値を使う)を掛けているため、_leftFingerState/
-    // _rightFingerStateに前フレームの状態を保持し、毎フレームHandPoseClassifier.GetFingerStateへ渡す。
+    // HandLandmarkerの生ランドマーク＋HandPoseClassifierによる自前の幾何学的判定へ戻した(ClassifyPose参照)。
+    // HandPoseClassifier側で指ごとにヒステリシス(前フレームの伸展/屈曲状態を見て、判定の上げ下げに
+    // 別の閾値を使う)を掛けているため、_leftFingerState/_rightFingerStateに前フレームの状態を保持し、
+    // 毎フレームHandPoseClassifier.GetFingerStateへ渡す。
     //
-    // ILoveYouサイン(親指+人差し指+小指を伸ばす、中指・薬指は屈曲)は上記の離散コマンドとは別枠の
-    // 「持続効果」として扱い、出している間ずっと味方全体を微量回復し続ける(UpdateHealPulse参照)。
+    // 回復はもともとILoveYouサイン(親指+人差し指+小指を伸ばす)を使っていたが、3指同時の複合判定は
+    // どれか1本でもずれると成立しないため実機での検出率が低く、親指のみ伸展+方向(上/下)という
+    // より単純な判定のバッドサイン(親指下向き、ThumbDown)に置き換えた。グッドサイン(ThumbUp)と
+    // 判定条件(指の伸展/屈曲パターン)自体は同じで、親指の向きだけで区別する(ClassifyPose参照)。
+    // 上記の離散コマンドとは別枠の「持続効果」として扱い、出している間ずっと味方全体を
+    // 微量回復し続ける(UpdateHealPulse参照)。
     //
     // コマンドが新しく確定した瞬間、および回復が開始した瞬間にCommandAnnouncerで
     // 「命令：〜が発動！」を画面へ表示する(演出をわかりやすくするためのフィードバック)。
@@ -47,8 +51,8 @@ namespace Game
         [Tooltip("両手ともパーの状態を何秒キープしたら必殺技(keyboard6相当)を発動するか")]
         [SerializeField] private float _bothHandsOpenHoldSeconds = 2f;
 
-        [Header("回復（ILoveYouサイン）")]
-        [Tooltip("ILoveYouサイン(親指+人差し指+小指を伸ばす)をどちらかの手で出している間、味方全体に与える回復量(HP/秒)")]
+        [Header("回復（バッドサイン/親指下向き）")]
+        [Tooltip("バッドサイン(親指のみ伸展、下向き)をどちらかの手で出している間、味方全体に与える回復量(HP/秒)")]
         [SerializeField] private float _healPerSecond = 20f;
 
         [Header("デバッグ")]
@@ -71,6 +75,8 @@ namespace Game
         // デバッグ表示用に、直近フレームで検出できた指標値をキャッシュしておく。
         HandPoseClassifier.FingerMetrics _leftMetrics;
         HandPoseClassifier.FingerMetrics _rightMetrics;
+        HandPoseClassifier.ThumbDirection _leftThumbDir;
+        HandPoseClassifier.ThumbDirection _rightThumbDir;
         bool _leftHandDetected;
         bool _rightHandDetected;
 
@@ -114,8 +120,6 @@ namespace Game
             var preferRight = HandPreference.PreferRightHand;
             HandPose? leftPose = null;
             HandPose? rightPose = null;
-            bool leftIsILoveYou = false;
-            bool rightIsILoveYou = false;
             var selectedIndex = -1;
 
             for (var i = 0; i < result.handWorldLandmarks.Count; i++)
@@ -124,12 +128,13 @@ namespace Game
                 if (worldLm == null || worldLm.Count < 21) continue;
 
                 var isRight = IsRightHandAt(result, i);
+                var points = ToVector3Array(worldLm);
                 var previous = isRight ? _rightFingerState : _leftFingerState;
-                var fingers = HandPoseClassifier.GetFingerState(ToVector3Array(worldLm), _thresholds, previous, out var metrics);
-                var pose = ClassifyPose(fingers);
-                var isILoveYou = IsILoveYouShape(fingers);
-                if (isRight) { rightPose = pose; rightIsILoveYou = isILoveYou; _rightFingerState = fingers; _rightMetrics = metrics; _rightHandDetected = true; }
-                else { leftPose = pose; leftIsILoveYou = isILoveYou; _leftFingerState = fingers; _leftMetrics = metrics; _leftHandDetected = true; }
+                var fingers = HandPoseClassifier.GetFingerState(points, _thresholds, previous, out var metrics);
+                var thumbDir = HandPoseClassifier.GetThumbDirection(points, _thresholds.ThumbDirectionMargin);
+                var pose = ClassifyPose(fingers, thumbDir);
+                if (isRight) { rightPose = pose; _rightFingerState = fingers; _rightMetrics = metrics; _rightThumbDir = thumbDir; _rightHandDetected = true; }
+                else { leftPose = pose; _leftFingerState = fingers; _leftMetrics = metrics; _leftThumbDir = thumbDir; _leftHandDetected = true; }
 
                 // 利き手側を優先して選ぶ。データが無ければもう片方にフォールバックする。
                 if (isRight == preferRight) selectedIndex = i;
@@ -139,8 +144,8 @@ namespace Game
             // 利き手に関係なく、両手が同時にパーであるかどうかを見る(必殺技の発動条件)。
             UpdateBothHandsHold(leftPose == HandPose.OpenPalm && rightPose == HandPose.OpenPalm);
 
-            // ILoveYouサインも利き手に関係なく、どちらかの手で出ていれば回復し続ける(離散コマンドとは独立)。
-            UpdateHealPulse(leftIsILoveYou || rightIsILoveYou);
+            // バッドサインも利き手に関係なく、どちらかの手で出ていれば回復し続ける(離散コマンドとは独立)。
+            UpdateHealPulse(leftPose == HandPose.ThumbDown || rightPose == HandPose.ThumbDown);
 
             if (selectedIndex < 0)
             {
@@ -181,7 +186,7 @@ namespace Game
             }
         }
 
-        // ILoveYouサインを出している間、味方全体(Team.Player)を毎フレームdeltaTime分だけ回復し続ける。
+        // バッドサインを出している間、味方全体(Team.Player)を毎フレームdeltaTime分だけ回復し続ける。
         // 開始した瞬間だけCommandAnnouncerで通知する(毎フレーム通知すると連呼になるため)。
         void UpdateHealPulse(bool active)
         {
@@ -215,22 +220,23 @@ namespace Game
             return categories[0].categoryName == "Left";
         }
 
-        // 5指の伸展/屈曲状態から、離散コマンドに使う4つの形を判定する。互いに排他になるよう
+        // 5指の伸展/屈曲状態から、離散コマンドに使う形を判定する。互いに排他になるよう
         // 親指の伸展/屈曲も条件に含めている(例: 「人差し指のみ」と「チョキ」を確実に区別する)。
-        static HandPose ClassifyPose(HandPoseClassifier.FingerState f)
+        // 親指のみ伸展のパターンは、さらに向き(thumbDir)でThumbUp(グッドサイン)/ThumbDown(バッドサイン)を
+        // 区別する。どちらとも言えない向き(Neutral、横向き等)はThumbUp扱いにしておく
+        // (元々のグッドサイン1つだけだった頃と挙動が変わらないようにするため)。
+        static HandPose ClassifyPose(HandPoseClassifier.FingerState f, HandPoseClassifier.ThumbDirection thumbDir)
         {
             if (!f.Thumb && f.Index && !f.Middle && !f.Ring && !f.Pinky) return HandPose.IndexOnly;
             if (f.Thumb && f.Index && f.Middle && f.Ring && f.Pinky) return HandPose.OpenPalm;
             if (!f.Thumb && f.Index && f.Middle && !f.Ring && !f.Pinky) return HandPose.Scissors;
-            if (f.Thumb && !f.Index && !f.Middle && !f.Ring && !f.Pinky) return HandPose.ThumbUp;
+            if (f.Thumb && !f.Index && !f.Middle && !f.Ring && !f.Pinky)
+                return thumbDir == HandPoseClassifier.ThumbDirection.Down ? HandPose.ThumbDown : HandPose.ThumbUp;
             return HandPose.None;
         }
 
-        // ILoveYouサイン: 親指+人差し指+小指のみ伸展、中指・薬指は屈曲。
-        static bool IsILoveYouShape(HandPoseClassifier.FingerState f) =>
-            f.Thumb && f.Index && !f.Middle && !f.Ring && f.Pinky;
-
-        // ApplyCommandと対になる、CommandAnnouncer用の表示名。
+        // ApplyCommandと対になる、CommandAnnouncer用の表示名。ThumbDown(回復)はUpdateHealPulseが
+        // 独自に「回復」を通知するため、ここではnull(無表示)にして二重通知を避ける。
         static string PoseLabel(HandPose pose) => pose switch
         {
             HandPose.IndexOnly => "集合",
@@ -314,19 +320,19 @@ namespace Game
             GUI.Label(new Rect(10, y, 600, 20), $"Pose: {_confirmedPose} (pending: {_pendingPose} {_pendingTimer:F2}s)");
             y += 20;
 
-            if (_rightHandDetected) DrawHandDebug(ref y, "Right", _rightMetrics, _rightFingerState);
+            if (_rightHandDetected) DrawHandDebug(ref y, "Right", _rightMetrics, _rightFingerState, _rightThumbDir);
             else GUI.Label(new Rect(10, y, 600, 20), "Right: 未検出");
             y += 20;
 
-            if (_leftHandDetected) DrawHandDebug(ref y, "Left", _leftMetrics, _leftFingerState);
+            if (_leftHandDetected) DrawHandDebug(ref y, "Left", _leftMetrics, _leftFingerState, _leftThumbDir);
             else GUI.Label(new Rect(10, y, 600, 20), "Left: 未検出");
         }
 
-        static void DrawHandDebug(ref float y, string label, HandPoseClassifier.FingerMetrics m, HandPoseClassifier.FingerState f)
+        static void DrawHandDebug(ref float y, string label, HandPoseClassifier.FingerMetrics m, HandPoseClassifier.FingerState f, HandPoseClassifier.ThumbDirection thumbDir)
         {
             string Cell(string name, float value, bool extended) => $"{name} {value:F2}{(extended ? "○" : "×")}";
             var text = $"{label}: " +
-                $"{Cell("親指", m.Thumb, f.Thumb)}  {Cell("人差", m.Index, f.Index)}  " +
+                $"{Cell("親指", m.Thumb, f.Thumb)}({thumbDir})  {Cell("人差", m.Index, f.Index)}  " +
                 $"{Cell("中指", m.Middle, f.Middle)}  {Cell("薬指", m.Ring, f.Ring)}  {Cell("小指", m.Pinky, f.Pinky)}";
             GUI.Label(new Rect(10, y, 700, 20), text);
         }
