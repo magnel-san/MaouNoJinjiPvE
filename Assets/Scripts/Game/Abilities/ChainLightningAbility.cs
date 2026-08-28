@@ -47,7 +47,10 @@ namespace Game
             var dist = Vector3.Distance(transform.position, target.transform.position);
             IsHoldingDistance = dist <= MaxDistance && dist >= MinDistance;
 
-            if (IsHoldingDistance && cooldownTimer <= 0f)
+            // 発射条件はMaxDistance以内にいることだけを見る(MinDistanceより近い=詰め寄られている間も
+            // 撃てるようにする)。前衛が居ない編成でボスに詰め寄られ続けると、理想の距離帯に入れず
+            // 一切攻撃できなくなっていたため。
+            if (dist <= MaxDistance && cooldownTimer <= 0f)
             {
                 FireChain(target);
                 var cfg = GameBalanceConfig.Instance;
@@ -71,7 +74,7 @@ namespace Game
                 hit.Add(current);
 
                 var health = current.GetComponent<CharacterHealth>();
-                if (health != null && health.IsAlive) health.ApplyDamage(damage, BoltColor);
+                if (health != null && health.IsAlive) health.ApplyDamage(damage, BoltColor, identity);
 
                 var to = current.transform.position + Vector3.up;
                 LightningBoltEffect.Spawn(from, to, BoltColor);

@@ -12,6 +12,9 @@ namespace Game
     public static class CombatFx
     {
         public static readonly Color DefaultDamageColor = new Color(1f, 0.85f, 0.2f);
+        public static readonly Color DodgeColor = new Color(0.4f, 0.9f, 1f);
+        public static readonly Color OuchColor = new Color(1f, 0.25f, 0.2f);
+        public static readonly Color GuardColor = new Color(0.5f, 0.8f, 1f);
 
         public static void HitFlash(Transform target, Color color, float duration = 0.15f)
         {
@@ -22,8 +25,19 @@ namespace Game
         public static void DamagePopup(Vector3 worldPos, float amount, Color color)
         {
             if (amount <= 0f) return;
-            DamagePopupEffect.Spawn(worldPos + Vector3.up * 1.6f, Mathf.CeilToInt(amount).ToString(), color);
+            DamagePopupEffect.Spawn(worldPos + Vector3.up * 1.6f, Mathf.CeilToInt(amount).ToString(), color, 1f);
         }
+
+        // 予告攻撃をよけた/くらった時に、通常のダメージ数値のさらに2倍のサイズで表示するテキスト。
+        public static void DodgePopup(Vector3 worldPos) =>
+            DamagePopupEffect.Spawn(worldPos + Vector3.up * 1.8f, "DODGE", DodgeColor, 2f);
+
+        public static void OuchPopup(Vector3 worldPos) =>
+            DamagePopupEffect.Spawn(worldPos + Vector3.up * 1.8f, "OUCH", OuchColor, 2f);
+
+        // グー防御でダメージを完全無効化できた時に、OUCHの代わりに表示するテキスト。
+        public static void GuardPopup(Vector3 worldPos) =>
+            DamagePopupEffect.Spawn(worldPos + Vector3.up * 1.8f, "GUARD", GuardColor, 2f);
 
         public static void ImpactBurst(Vector3 worldPos, Color color, float size = 0.25f)
         {
@@ -124,21 +138,21 @@ namespace Game
             Camera _cam;
             float _elapsed;
 
-            public static void Spawn(Vector3 worldPos, string text, Color color)
+            public static void Spawn(Vector3 worldPos, string text, Color color, float sizeMultiplier)
             {
                 var go = new GameObject("DamagePopup");
                 go.transform.position = worldPos;
-                go.AddComponent<DamagePopupEffect>().Initialize(text, color);
+                go.AddComponent<DamagePopupEffect>().Initialize(text, color, sizeMultiplier);
             }
 
-            void Initialize(string text, Color color)
+            void Initialize(string text, Color color, float sizeMultiplier)
             {
                 _cam = Camera.main;
 
                 _mesh = gameObject.AddComponent<TextMesh>();
                 _mesh.text = text;
                 _mesh.color = color;
-                _mesh.characterSize = 0.2f;
+                _mesh.characterSize = 0.2f * Mathf.Max(0.01f, sizeMultiplier);
                 _mesh.fontSize = 72;
                 _mesh.anchor = TextAnchor.MiddleCenter;
                 _mesh.alignment = TextAlignment.Center;

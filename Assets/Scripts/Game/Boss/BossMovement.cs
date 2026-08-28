@@ -8,11 +8,12 @@ namespace Game
     public class BossMovement : MonoBehaviour
     {
         [Header("移動設定")]
-        [SerializeField] private float _dashSpeed = 20f;
+        [Tooltip("突進(行動パターン1/2)の速度。攻撃として避けがいがあるよう、通常移動より速くしてある")]
+        [SerializeField] private float _dashSpeed = 24f;
         [Tooltip("突進の最低移動距離（距離が近くてもこの長さは突き抜けて走る）")]
-        [SerializeField] private float _minDashDistance = 6f; 
+        [SerializeField] private float _minDashDistance = 6f;
         [Tooltip("円運動の走る速度 (m/s) ※数値に応じてしっかり速度が変わります")]
-        [SerializeField] private float _circleSpeed = 2000f; 
+        [SerializeField] private float _circleSpeed = 18f;
         [Tooltip("ジャンプの最高高度")]
         [SerializeField] private float _jumpHeight = 10f;
         [SerializeField] private float _jumpDuration = 1.2f;
@@ -25,13 +26,18 @@ namespace Game
         [Tooltip("ジャンプ前：着地予兆エリアを出してから跳び上がるまでの逃げ時間（秒）")]
         [SerializeField] private float _jumpWarningDuration = 1.0f;
 
-        [Header("移動制限エリア（四角い枠）設定")]
-        [Tooltip("枠の中心位置（未設定ならVector3.zero＝マップ中央）")]
+        [Header("移動制限エリア（円形）設定")]
+        [Tooltip("円の中心位置（未設定ならVector3.zero＝マップ中央）")]
         [SerializeField] private Vector3 _areaCenter = Vector3.zero;
-        [Tooltip("移動可能エリアの横幅(X)と奥行き(Z)")]
-        [SerializeField] private Vector2 _areaSize = new Vector2(30f, 30f);
+        [Tooltip("ボスが出られない円の半径。端っこに行かせないための封じ込め")]
+        [SerializeField] private float _areaRadius = 13.5f;
         [Tooltip("壁からのマージン（ボスの半径分あけて手前で止まる）")]
         [SerializeField] private float _wallMargin = 1.5f;
+
+        /// <summary>アリーナ円の中心（ワールド座標）。ボス専用技など他スクリプトから参照する。</summary>
+        public Vector3 AreaCenter => _areaCenter;
+        /// <summary>アリーナ円の実効半径（壁マージン控除後）。ボス専用技など他スクリプトから参照する。</summary>
+        public float AreaRadius => Mathf.Max(0.1f, _areaRadius - _wallMargin);
 
         [Header("円運動時の走行時接触ノックバック設定")]
         [SerializeField] private float _contactDamage = 10f;
@@ -158,7 +164,11 @@ namespace Game
             float actualDistance = Mathf.Max(rawDistance, _minDashDistance);
             Vector3 rawDestination = startPos + dir * actualDistance;
 
-            Vector3 finalDestination = ClampToAreaBounds(rawDestination);
+            // 円の中心からの単純な引き戻し(ClampToAreaBounds)だと、ボスが既に境界付近にいて
+            // さらに外側へ突進しようとした場合に「開始位置とほぼ同じ点」へ縮退し、
+            // 突進が実質何も起きない(見た目は予告だけ出て移動しない)バグになるため、
+            // 開始位置から突進方向への直線と円の交点を使って止める(必ず前進距離が残る)。
+            Vector3 finalDestination = ClampDestinationToAreaBounds(startPos, rawDestination);
             float finalDistance = Vector3.Distance(startPos, finalDestination);
 
             _indicatorLine.positionCount = 2;
@@ -263,8 +273,8 @@ namespace Game
 
             IsMoving = true;
             Vector3 startPos = transform.position;
-            
-            Vector3 targetPos = ClampToAreaBounds(target.position);
+
+            Vector3 targetPos = ClampDestinationToAreaBounds(startPos, target.position);
             targetPos.y = startPos.y;
 
             // 1. 着地地点に「赤い丸い面エリア」を表示
@@ -310,17 +320,54 @@ namespace Game
             onLandingCallback?.Invoke();
         }
 
+        // ボスが円形アリーナの外へ出ないよう、中心からの距離を半径以内へクランプする
+        // (端っこの方に行かないようにする、というユーザー要望に対応)。
         private Vector3 ClampToAreaBounds(Vector3 targetPosition)
         {
-            float minX = _areaCenter.x - (_areaSize.x * 0.5f) + _wallMargin;
-            float maxX = _areaCenter.x + (_areaSize.x * 0.5f) - _wallMargin;
-            float minZ = _areaCenter.z - (_areaSize.y * 0.5f) + _wallMargin;
-            float maxZ = _areaCenter.z + (_areaSize.y * 0.5f) - _wallMargin;
+            float radius = AreaRadius;
+            Vector3 offset = targetPosition - _areaCenter;
+            offset.y = 0f;
 
-            targetPosition.x = Mathf.Clamp(targetPosition.x, minX, maxX);
-            targetPosition.z = Mathf.Clamp(targetPosition.z, minZ, maxZ);
+            float dist = offset.magnitude;
+            if (dist <= radius || dist < 1e-4f) return targetPosition;
 
-            return targetPosition;
+            Vector3 clampedOffset = offset * (radius / dist);
+            return new Vector3(_areaCenter.x + clampedOffset.x, targetPosition.y, _areaCenter.z + clampedOffset.z);
+        }
+
+        // 単発の突進/ジャンプ先を、開始位置(startPos)から見た直線上で円の境界に止める。
+        // ClampToAreaBoundsと違い、開始位置がどこにあっても必ずstartPosから前進した位置になる
+        // (境界付近から外側へ突進する場合に移動距離がゼロへ縮退するのを防ぐ)。
+        private Vector3 ClampDestinationToAreaBounds(Vector3 startPos, Vector3 destination)
+        {
+            float radius = AreaRadius;
+
+            Vector3 startOffset = startPos - _areaCenter;
+            startOffset.y = 0f;
+            Vector3 destOffset = destination - _areaCenter;
+            destOffset.y = 0f;
+
+            if (destOffset.magnitude <= radius) return destination; // 目的地が既に円内ならそのまま
+
+            Vector3 delta = destOffset - startOffset;
+            float segmentLength = delta.magnitude;
+            if (segmentLength < 1e-4f)
+            {
+                // 開始位置自体が円の外(通常起こらない異常系)。中心方向へ半径分だけ戻す。
+                var pulled = startOffset.sqrMagnitude > 1e-6f ? startOffset.normalized * radius : Vector3.zero;
+                return new Vector3(_areaCenter.x + pulled.x, destination.y, _areaCenter.z + pulled.z);
+            }
+            Vector3 dir = delta / segmentLength;
+
+            // |startOffset + dir*t| = radius を解く(t^2 + 2bt + c = 0)。startOffsetは円内にある前提なので
+            // 判別式は必ず非負で、前方の交点はt = -b + sqrt(b^2 - c)。
+            float b = Vector3.Dot(startOffset, dir);
+            float c = startOffset.sqrMagnitude - radius * radius;
+            float discriminant = Mathf.Max(0f, b * b - c);
+            float t = Mathf.Clamp(-b + Mathf.Sqrt(discriminant), 0f, segmentLength);
+
+            Vector3 result = startOffset + dir * t;
+            return new Vector3(_areaCenter.x + result.x, destination.y, _areaCenter.z + result.z);
         }
 
         private void CheckContactKnockback(float force)
@@ -335,7 +382,7 @@ namespace Game
                 var health = targetIdentity.GetComponent<CharacterHealth>();
                 if (health != null && health.IsAlive)
                 {
-                    health.ApplyDamage(_contactDamage, Color.red);
+                    health.ApplyDamage(_contactDamage, Color.red, _identity);
                 }
 
                 var rb = targetIdentity.GetComponent<Rigidbody>();
@@ -351,8 +398,7 @@ namespace Game
         private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.yellow;
-            Vector3 size = new Vector3(_areaSize.x, 0.1f, _areaSize.y);
-            Gizmos.DrawWireCube(_areaCenter, size);
+            TargetingUtility.DrawGizmoCircle(_areaCenter, _areaRadius);
         }
     }
 }

@@ -250,16 +250,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 245bb3dcb6f894d80aeb116ebcd7b0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.BossMovement
-  _dashSpeed: 20
+  _dashSpeed: 24
   _minDashDistance: 6
-  _circleSpeed: 25
+  _circleSpeed: 18
   _jumpHeight: 10
   _jumpDuration: 1.2
   _dashWarningDuration: 1.5
   _circleWarningDuration: 1.5
   _jumpWarningDuration: 1
   _areaCenter: {x: 0, y: 0, z: 0}
-  _areaSize: {x: 30, y: 30}
+  _areaRadius: 13.5
   _wallMargin: 1.5
   _contactDamage: 10
   _contactKnockback: 5

@@ -61,7 +61,7 @@ namespace Game
             if (canDamage)
             {
                 lastDamageTimeByAttacker[otherCombat] = Time.time;
-                health.ApplyDamage(otherCombat.stats.AttackPower);
+                health.ApplyDamage(otherCombat.stats.AttackPower, CombatFx.DefaultDamageColor, otherIdentity);
             }
 
             bool canKnockback = !lastKnockbackTimeByAttacker.TryGetValue(otherCombat, out float lastKnockbackTime)

@@ -11,6 +11,11 @@ namespace Game
 
         [HideInInspector] public float DamageReductionPercent = 0f;
 
+        [Tooltip("グー(防御)コマンド中、プレイヤー側キャラのダメージをこの割合だけさらに軽減する" +
+            "(ボス2の全体攻撃だけは別枠で0ダメージにできる。RectTelegraphZoneのignoreGuard参照)")]
+        [Range(0f, 100f)]
+        public float GuardDamageReductionPercent = 30f;
+
         [Tooltip("落下死のY座標に到達後、この秒数その場に留まると消滅する")]
         public float FallDeathDespawnDelay = 3f;
 
@@ -73,13 +78,24 @@ namespace Game
             }
         }
 
-        public void ApplyDamage(float rawDamage) => ApplyDamage(rawDamage, CombatFx.DefaultDamageColor);
+        public void ApplyDamage(float rawDamage) => ApplyDamage(rawDamage, CombatFx.DefaultDamageColor, null);
 
-        public void ApplyDamage(float rawDamage, Color fxColor)
+        public void ApplyDamage(float rawDamage, Color fxColor) => ApplyDamage(rawDamage, fxColor, null);
+
+        // attackerを渡すと、そのキャラの与ダメージ集計(DamageStatsTracker、勝敗画面表示用)に加算される。
+        // 呼び出し元が攻撃者を特定できない場合(場外死等)はnullのままでよい。
+        public void ApplyDamage(float rawDamage, Color fxColor, CharacterIdentity attacker)
         {
             if (!IsAlive || rawDamage <= 0f) return;
 
             float finalDamage = rawDamage * (1f - Mathf.Clamp01(DamageReductionPercent / 100f));
+
+            // グー(防御)コマンド中は、プレイヤー側キャラのみさらにダメージを軽減する。
+            if (BattleCommandState.GuardActive && identity.Team == Team.Player)
+            {
+                finalDamage *= 1f - Mathf.Clamp01(GuardDamageReductionPercent / 100f);
+            }
+
             CurrentHP = Mathf.Max(0f, CurrentHP - finalDamage);
             OnHPChanged?.Invoke(CurrentHP, stats.MaxHP);
 
@@ -87,6 +103,8 @@ namespace Game
             CombatFx.DamagePopup(transform.position, finalDamage, fxColor);
             CombatFx.ImpactBurst(transform.position + Vector3.up, fxColor);
             SfxUtil.PlayAt(HitSound, transform.position);
+
+            if (attacker != null) DamageStatsTracker.RegisterDamage(attacker, finalDamage);
 
             if (CurrentHP <= 0f) Die();
         }
@@ -117,7 +135,8 @@ namespace Game
             {
                 if (behaviour == this) continue;
                 if (behaviour is CharacterMovement || behaviour is CharacterPosture || behaviour is IMovementIntentSource
-                    || behaviour is BoundaryAvoidance || behaviour is CharacterChargeAssist || behaviour is BossController)
+                    || behaviour is BoundaryAvoidance || behaviour is CharacterChargeAssist || behaviour is BossController
+                    || behaviour is FinalHeroController)
                 {
                     behaviour.enabled = false;
                 }

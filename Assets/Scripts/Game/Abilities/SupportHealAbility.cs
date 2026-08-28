@@ -3,7 +3,8 @@ using UnityEngine;
 namespace Game
 {
     // Hタイプ: 支援。敵からは距離を取りつつ(Dタイプに近い自衛)、最も減っている味方の近くへ寄って
-    // 定期的に回復する。攻撃能力は持たない、味方を援護する専門のキャラ。
+    // 定期的に回復する。回復対象が居ない間(全員フルHP等)は簡易な弾を放って攻撃もする
+    // (回復キャラのみの編成でも手持ち無沙汰にならないようにするため)。
     [RequireComponent(typeof(CharacterIdentity))]
     public class SupportHealAbility : MonoBehaviour, IMovementIntentSource
     {
@@ -17,23 +18,47 @@ namespace Game
         [Tooltip("回復のたびに鳴らす効果音(未設定なら無音)")]
         public AudioClip HealSound;
 
+        [Header("攻撃(回復対象が居ない間だけ、ある程度は自分でも攻撃する)")]
+        [Tooltip("この距離以内の敵にのみ攻撃する")]
+        public float AttackRange = 7f;
+        [Tooltip("攻撃の再発動間隔(秒)")]
+        public float AttackCooldown = 3.5f;
+        [Tooltip("他の攻撃キャラと同程度の威力にしてある")]
+        public float AttackDamage = 10f;
+        public float BoltSpeed = 30f;
+        [Tooltip("未設定なら簡易的な球体を代わりに使う")]
+        public GameObject BoltPrefab;
+        [Tooltip("攻撃のたびに鳴らす効果音(未設定なら無音)")]
+        public AudioClip AttackSound;
+
         public int MovementPriority => 10;
 
         static readonly Color HealColor = new Color(0.35f, 1f, 0.45f);
 
         CharacterIdentity identity;
         float cooldownTimer;
+        float attackCooldownTimer;
 
         void Awake() => identity = GetComponent<CharacterIdentity>();
 
         void Update()
         {
             cooldownTimer -= Time.deltaTime;
-            if (cooldownTimer > 0f) return;
+            attackCooldownTimer -= Time.deltaTime;
 
             var target = FindMostWoundedAllyInRange();
-            if (target == null) return;
+            if (target != null)
+            {
+                if (cooldownTimer <= 0f) HealTarget(target);
+                return;
+            }
 
+            // 回復対象が居ない間(全員フルHP等)は、ある程度は自分でも攻撃して手持ち無沙汰にならないようにする。
+            TryAttackNearestEnemy();
+        }
+
+        void HealTarget(CharacterIdentity target)
+        {
             var health = target.GetComponent<CharacterHealth>();
             if (health == null) return;
 
@@ -45,6 +70,39 @@ namespace Game
             SfxUtil.PlayAt(HealSound, target.transform.position);
 
             cooldownTimer = cfg != null ? cfg.SupportHealCooldown.Get(HealCooldownTier) : 4f;
+        }
+
+        void TryAttackNearestEnemy()
+        {
+            if (attackCooldownTimer > 0f) return;
+
+            var enemy = TargetingUtility.FindNearestEnemy(transform.position, identity.Team);
+            if (enemy == null) return;
+            if (Vector3.Distance(transform.position, enemy.transform.position) > AttackRange) return;
+
+            FireBolt(enemy);
+            attackCooldownTimer = AttackCooldown;
+        }
+
+        void FireBolt(CharacterIdentity target)
+        {
+            Vector3 dir = (target.transform.position - transform.position).normalized;
+
+            GameObject go = BoltPrefab != null
+                ? Instantiate(BoltPrefab, transform.position, Quaternion.LookRotation(dir))
+                : GameObject.CreatePrimitive(PrimitiveType.Sphere);
+
+            if (BoltPrefab == null)
+            {
+                go.transform.SetPositionAndRotation(transform.position, Quaternion.LookRotation(dir));
+                go.transform.localScale = Vector3.one * 0.3f;
+            }
+
+            var bolt = go.GetComponent<ArrowProjectile>();
+            if (bolt == null) bolt = go.AddComponent<ArrowProjectile>();
+            bolt.Initialize(dir, BoltSpeed, AttackDamage, 3f, identity);
+
+            SfxUtil.PlayAt(AttackSound, transform.position);
         }
 
         CharacterIdentity FindMostWoundedAllyInRange()

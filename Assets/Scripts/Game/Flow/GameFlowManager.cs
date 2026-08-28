@@ -31,6 +31,46 @@ namespace Game.Flow
     [SerializeField] private int _battleRoundCount = 3;
     [Tooltip("各ラウンドの勝敗表示を出しておく秒数(自動で閉じて次のラウンドへ進む)")]
     [SerializeField] private float _roundResultDisplaySeconds = 3f;
+    [Tooltip("ボスを撃破してから次に進むまでの猶予秒数。この間キャラ・入力は有効のままなので、" +
+      "落ちているコインを拾いに行ける")]
+    [SerializeField] private float _bossDeathGraceSeconds = 5f;
+
+    [Header("ボス前の練習フェーズ")]
+    [Tooltip("各ラウンドのボス出現前、雑魚のみが指定秒数だけ湧く練習時間(要素数=_battleRoundCount)。" +
+      "0にするとそのラウンドは練習フェーズをスキップする")]
+    [SerializeField] private float[] _practicePhaseSeconds = { 15f, 15f, 15f };
+    [Tooltip("練習フェーズ中に召喚する雑魚プレハブ")]
+    [SerializeField] private GameObject[] _practiceMinionPrefabs;
+    [Tooltip("練習フェーズ中、雑魚を召喚する間隔(秒)")]
+    [SerializeField] private float _practiceSpawnInterval = 3f;
+    [Tooltip("「警告：ボスN」フルスクリーン演出を表示しておく秒数")]
+    [SerializeField] private float _bossWarningDisplaySeconds = 3f;
+
+    [Header("最終決戦(勇者)")]
+    [Tooltip("3回のボス戦の後に出現する最終決戦のプレハブ。通常のボス(Boss.prefab)と同じものを想定")]
+    [SerializeField] private GameObject _finalHeroPrefab;
+    [Tooltip("「両手をパーにして必殺技(ビーム)を撃て！」の大きな指示UIを表示しておく秒数")]
+    [SerializeField] private float _finalBattleInstructionDisplaySeconds = 4f;
+    [Tooltip("ゲームクリア画面(GAME CLEARの一言表示)を出しておく秒数")]
+    [SerializeField] private float _gameClearDisplaySeconds = 2.5f;
+
+    [System.Serializable]
+    public class ScoreRating
+    {
+      public int MinScore;
+      public string RatingLabel;
+      [TextArea] public string Comment;
+    }
+
+    [Header("リザルト評価(スコアに応じた魔王からの一言。MinScore以下で最も近い項目が採用される)")]
+    [SerializeField] private ScoreRating[] _scoreRatings =
+    {
+      new ScoreRating { MinScore = 0, RatingLabel = "D", Comment = "うーん、もう少し励め" },
+      new ScoreRating { MinScore = 200, RatingLabel = "C", Comment = "まあまあだな" },
+      new ScoreRating { MinScore = 500, RatingLabel = "B", Comment = "なかなかやるな" },
+      new ScoreRating { MinScore = 1000, RatingLabel = "A", Comment = "見事だ！" },
+      new ScoreRating { MinScore = 2000, RatingLabel = "S", Comment = "完璧だ、我が軍の誇りだ！" },
+    };
 
     [Header("タイトル / ルール画面")]
     [SerializeField] private GameObject _titleRoot;
@@ -95,6 +135,24 @@ namespace Game.Flow
       // 他の全キャラのStart()(CharacterActivation.ActiveOnStartの反映)が終わるのを待ってから上書きする。
       yield return null;
 
+      // スコア/コンボ/画面枠/警告UIはゲーム全体を通して常駐させるため、最初にまとめて用意しておく
+      // (最初のコイン取得より前に用意しておかないと、ScoreBorderUIがOnScoreChangedの初回通知を
+      // 取りこぼしてしまうため)。
+      ScoreBorderUI.EnsureExists();
+      ScoreUI.EnsureExists();
+      ComboUI.EnsureExists();
+      BossWarningUI.EnsureExists();
+
+      // リザルト画面でEnterキーが押されたら、ここへ戻ってタイトルからやり直す。
+      while (true)
+      {
+        yield return RunSingleGameAsync();
+        ResetForNewGame();
+      }
+    }
+
+    private IEnumerator RunSingleGameAsync()
+    {
       SetAllCharactersActive(false);
       SetBattleInputActive(false);
 
@@ -111,6 +169,10 @@ namespace Game.Flow
 
         yield return ShowScreenAndWait(_gameStartRoot, _gameStartButton);
 
+        yield return RunPracticePhaseAsync(round);
+        yield return BossWarningUI.ShowBossIntroAsync($"警告！ボス{round}", _bossWarningDisplaySeconds);
+
+        DamageStatsTracker.Reset();
         SpawnBossForRound(round);
         SetAllCharactersActive(true);
         SetBattleInputActive(true);
@@ -124,6 +186,166 @@ namespace Game.Flow
 
         DespawnAllEnemies();
       }
+
+      yield return RunFinalHeroEncounterAsync();
+    }
+
+    // リザルト画面でEnterキーを押した後、タイトルからやり直せるよう全状態をクリアする。
+    private void ResetForNewGame()
+    {
+      foreach (var identity in CharacterRegistry.All.ToList())
+      {
+        if (identity == null) continue;
+        Destroy(identity.gameObject);
+      }
+
+      _recruitedCharacters.Clear();
+      _lastRecruitedCountThisRound = 0;
+      _lastRoundWon = false;
+
+      ScoreManager.Reset();
+      DamageStatsTracker.Reset();
+
+      // 最終決戦の撃破演出中に無効化したカメラ追従を元に戻す。
+      var cameraFollower = FindAnyObjectByType<RallyCameraFollower>();
+      if (cameraFollower != null) cameraFollower.enabled = true;
+    }
+
+    // 各ボス出現前、指定秒数だけ雑魚のみを湧かせ、操作感を試せる時間を作る。
+    // 秒数0または召喚プレハブ未設定ならスキップする。
+    private IEnumerator RunPracticePhaseAsync(int round)
+    {
+      if (_practiceMinionPrefabs == null || _practiceMinionPrefabs.Length == 0) yield break;
+
+      var index = Mathf.Clamp(round - 1, 0, Mathf.Max(_practicePhaseSeconds.Length - 1, 0));
+      var duration = _practicePhaseSeconds != null && _practicePhaseSeconds.Length > 0 ? _practicePhaseSeconds[index] : 0f;
+      if (duration <= 0f) yield break;
+
+      SetAllCharactersActive(true);
+      SetBattleInputActive(true);
+
+      var elapsed = 0f;
+      var spawnTimer = 0f;
+      while (elapsed < duration)
+      {
+        var dt = Time.deltaTime;
+        elapsed += dt;
+        spawnTimer -= dt;
+        if (spawnTimer <= 0f)
+        {
+          spawnTimer = _practiceSpawnInterval;
+          SpawnPracticeMinion();
+        }
+        yield return null;
+      }
+
+      SetBattleInputActive(false);
+      SetAllCharactersActive(false);
+      DespawnAllEnemies();
+    }
+
+    private void SpawnPracticeMinion()
+    {
+      if (_practiceMinionPrefabs == null || _practiceMinionPrefabs.Length == 0) return;
+
+      var prefab = _practiceMinionPrefabs[Random.Range(0, _practiceMinionPrefabs.Length)];
+      if (prefab == null) return;
+
+      var angle = Random.Range(0f, Mathf.PI * 2f);
+      var offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * 4f;
+      var instance = Instantiate(prefab, _bossSpawnPosition + offset, Quaternion.identity);
+
+      var identity = instance.GetComponent<CharacterIdentity>();
+      if (identity != null) identity.Team = Team.Enemy;
+
+      var activation = instance.GetComponent<CharacterActivation>();
+      if (activation != null) activation.SetActive(true);
+
+      if (instance.GetComponent<CoinDropOnDeath>() == null) instance.AddComponent<CoinDropOnDeath>();
+    }
+
+    // 3回のボス戦の後の最終決戦。プレハブ未設定ならスキップする。
+    // 通常のボスと同じプレハブを使い、そのAI(専用技・4パターン移動)は止めて、代わりに
+    // 固定位置からのチャージ→ビーム攻撃(FinalHeroController)に差し替える。
+    // 必殺ゲージは常に100%表示にし、両手パーを維持している間カメラから敵へビームを撃てる
+    // (FinalBattleBeamController、回数制限無し)。
+    private IEnumerator RunFinalHeroEncounterAsync()
+    {
+      if (_finalHeroPrefab == null) yield break;
+
+      yield return BossWarningUI.ShowBossIntroAsync("警告！勇者、見参！", _bossWarningDisplaySeconds);
+
+      var instance = Instantiate(_finalHeroPrefab, _bossSpawnPosition, Quaternion.Euler(0f, 180f, 0f));
+      var identity = instance.GetComponent<CharacterIdentity>();
+      if (identity != null)
+      {
+        identity.Team = Team.Enemy;
+        identity.IsBoss = true;
+      }
+
+      var regularBossController = instance.GetComponent<BossController>();
+      if (regularBossController != null) regularBossController.enabled = false;
+      var regularBossMovement = instance.GetComponent<BossMovement>();
+      if (regularBossMovement != null) regularBossMovement.enabled = false;
+
+      if (instance.GetComponent<FinalHeroController>() == null) instance.AddComponent<FinalHeroController>();
+      var deathReaction = instance.GetComponent<FinalHeroDeathReaction>();
+      if (deathReaction == null) deathReaction = instance.AddComponent<FinalHeroDeathReaction>();
+      var heroHpBar = instance.GetComponent<BossHpBarUI>();
+      if (heroHpBar == null) heroHpBar = instance.AddComponent<BossHpBarUI>();
+      heroHpBar.SetName("勇者");
+
+      var ultimateGauge = _battleInputRoot != null ? _battleInputRoot.GetComponentInChildren<UltimateGaugeController>(true) : null;
+      var beamController = _battleInputRoot != null ? _battleInputRoot.GetComponentInChildren<FinalBattleBeamController>(true) : null;
+      if (beamController == null && _battleInputRoot != null) beamController = _battleInputRoot.AddComponent<FinalBattleBeamController>();
+      if (beamController != null) beamController.SetTarget(identity);
+
+      DamageStatsTracker.Reset();
+      SetAllCharactersActive(true);
+      SetBattleInputActive(true);
+      if (ultimateGauge != null) ultimateGauge.SetFinalBattleMode(true);
+      if (beamController != null) beamController.enabled = true;
+
+      yield return BossWarningUI.ShowBossIntroAsync("両手をパーにして魔王の必殺技(ビーム)を撃て！", _finalBattleInstructionDisplaySeconds);
+
+      yield return new WaitUntil(() =>
+        (identity == null || !identity.IsAlive) ||
+        !CharacterRegistry.All.Any(c => c != null && c.Team == Team.Player && c.IsAlive));
+
+      var heroDefeated = identity == null || !identity.IsAlive;
+
+      if (beamController != null) beamController.enabled = false;
+      if (ultimateGauge != null) ultimateGauge.SetFinalBattleMode(false);
+      SetBattleInputActive(false);
+      SetAllCharactersActive(false);
+
+      if (heroDefeated)
+      {
+        // 撃破演出(カメラフォーカス+回転+縮小+コインばらまき)が終わるまで待つ。
+        if (deathReaction != null) yield return new WaitUntil(() => deathReaction.SequenceFinished);
+
+        GameClearUI.Show(ScoreManager.TotalScore, _gameClearDisplaySeconds);
+        yield return new WaitForSeconds(_gameClearDisplaySeconds);
+
+        var rating = ResolveRating(ScoreManager.TotalScore);
+        yield return GameResultUI.ShowAsync(DamageStatsTracker.TotalDamage, ScoreManager.CoinScore,
+          ScoreManager.ComboScore, ScoreManager.TotalScore, rating.RatingLabel, rating.Comment);
+      }
+    }
+
+    // スコアに応じた評価を、MinScore以下で最も近い項目から選ぶ。
+    private ScoreRating ResolveRating(int score)
+    {
+      ScoreRating best = null;
+      if (_scoreRatings != null)
+      {
+        foreach (var r in _scoreRatings)
+        {
+          if (r == null || score < r.MinScore) continue;
+          if (best == null || r.MinScore > best.MinScore) best = r;
+        }
+      }
+      return best ?? new ScoreRating { MinScore = 0, RatingLabel = "-", Comment = "" };
     }
 
     private void SetBattleInputActive(bool active)
@@ -282,6 +504,8 @@ namespace Game.Flow
       // Instantiate直後・CharacterMovement.Start()が走るより前に追加するため、通常のIMovementIntentSource
       // 走査に確実に混ざる。
       if (instance.GetComponent<PlayerCommandIntentSource>() == null) instance.AddComponent<PlayerCommandIntentSource>();
+      // グー(防御)コマンドの盾ビジュアルも同様に、プレハブ側の設定に関わらず必ず後付けする。
+      if (instance.GetComponent<CharacterGuard>() == null) instance.AddComponent<CharacterGuard>();
 
       var activation = instance.GetComponent<CharacterActivation>();
       if (activation != null) activation.SetActive(false);
@@ -333,6 +557,8 @@ namespace Game.Flow
         if (!enemyAlive)
         {
           _lastRoundWon = true;
+          // ボス撃破後、落ちているコインを拾いに行けるよう猶予秒数だけ待つ(キャラ・入力は有効のまま)。
+          if (_bossDeathGraceSeconds > 0f) yield return new WaitForSeconds(_bossDeathGraceSeconds);
           yield break;
         }
 
@@ -343,6 +569,8 @@ namespace Game.Flow
     // 勝敗に関わらず(このゲームは3回戦うため)、結果を少しだけ表示してから自動で次ラウンドへ進む。
     private IEnumerator ShowRoundResult(bool won)
     {
+      RoundResultStatsUI.Show(DamageStatsTracker.Snapshot, _roundResultDisplaySeconds);
+
       var root = won ? _winRoot : _loseRoot;
       if (root == null) yield break;
 

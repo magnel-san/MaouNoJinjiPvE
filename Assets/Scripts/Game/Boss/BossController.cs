@@ -26,11 +26,22 @@ namespace Game
         [SerializeField] private AudioClip _telegraphDetonateSound;
         [SerializeField] private AudioClip _summonSound;
 
+        [Header("アニメーション連携")]
+        [Tooltip("未設定なら子オブジェクトから自動検索する")]
+        [SerializeField] private Animator _animator;
+
+        const string AnimSpawn = "Spawn";
+        const string AnimSpecialAttack = "SpecialAttack";
+        const string AnimKnockback = "Knockback";
+        const string AnimMoveSpeed = "MoveSpeed";
+        const string AnimIsMoving = "IsMoving";
+
         static readonly Color ShockwaveColor = new Color(0.85f, 0.15f, 0.15f);
         static readonly Color SummonColor = new Color(0.35f, 0.05f, 0.45f);
 
         CharacterIdentity identity;
         CharacterStats stats;
+        CharacterHealth health;
         BossMovement movement;
         Rigidbody rb;
 
@@ -40,9 +51,18 @@ namespace Game
         int difficultyRound = 1;
 
         float shockwaveTimer;
-        float telegraphTimer;
         float summonTimer;
         float patternTimer; // 新移動パターンのタイマー
+        float directionalWipeTimer;
+        float fullCoverTimer;
+        float centerRingTimer;
+
+        float lastKnownHp;
+        float lastCoinDropHpFraction = 1f;
+        Vector3 lastPosition;
+
+        // ボス専用技1〜3が互いに重ならないようにするための排他フラグ(技の発動〜着弾までtrue)。
+        bool _specialAttackActive;
 
         public void SetDifficultyRound(int round) => difficultyRound = Mathf.Max(1, round);
 
@@ -50,13 +70,48 @@ namespace Game
         {
             identity = GetComponent<CharacterIdentity>();
             stats = GetComponent<CharacterStats>();
+            health = GetComponent<CharacterHealth>();
             movement = GetComponent<BossMovement>();
             rb = GetComponent<Rigidbody>();
+            if (_animator == null) _animator = GetComponentInChildren<Animator>();
+        }
+
+        [Header("撃破時のコインばらまき")]
+        [SerializeField] private int _deathCoinCount = 24;
+        [SerializeField] private float _deathCoinScatterRadius = 3.5f;
+
+        void OnEnable()
+        {
+            if (health != null)
+            {
+                health.OnHPChanged += HandleHpChanged;
+                health.OnDied += HandleDied;
+            }
+        }
+
+        void OnDisable()
+        {
+            if (health != null)
+            {
+                health.OnHPChanged -= HandleHpChanged;
+                health.OnDied -= HandleDied;
+            }
+        }
+
+        // ボス撃破時、大量のコインを周囲へばらまく。
+        void HandleDied()
+        {
+            for (var i = 0; i < _deathCoinCount; i++)
+            {
+                var offset = Random.insideUnitCircle * _deathCoinScatterRadius;
+                CoinPickup.Spawn(transform.position + new Vector3(offset.x, 0f, offset.y));
+            }
         }
 
         void Start()
         {
             stats.OverrideAttackPower(0f);
+            lastPosition = transform.position;
 
             // ★シーン内から「DemonCastleGatePoint」という名前のオブジェクトを自動検索して設定
             var gateObj = GameObject.Find(_gateObjectName);
@@ -71,9 +126,41 @@ namespace Game
 
             var cfg = GameBalanceConfig.Instance;
             shockwaveTimer = cfg != null ? cfg.BossShockwaveCooldown : 7f;
-            telegraphTimer = cfg != null ? cfg.BossTelegraphCooldown : 5f;
             summonTimer = cfg != null ? cfg.BossSummonCooldown : 12f;
+            directionalWipeTimer = cfg != null ? cfg.BossDirectionalWipeCooldown : 9f;
+            fullCoverTimer = cfg != null ? cfg.BossFullCoverCooldown : 11f;
+            centerRingTimer = cfg != null ? cfg.BossCenterRingCooldown : 13f;
             patternTimer = 1f; // 4秒ごとに移動アクションを開始
+
+            if (_animator != null) _animator.SetTrigger(AnimSpawn);
+        }
+
+        // ボス自身が被弾してHPが減った瞬間(=攻撃を受けた瞬間)にコンボを進め、
+        // HPが一定割合(GameBalanceConfig.BossCoinDropHpStepPercent)刻みで削れるたびにコインを落とす。
+        void HandleHpChanged(float current, float max)
+        {
+            if (current < lastKnownHp)
+            {
+                ComboTracker.RegisterHit();
+                TryDropCoinsForHpChange(current, max);
+            }
+            lastKnownHp = current;
+        }
+
+        void TryDropCoinsForHpChange(float current, float max)
+        {
+            if (max <= 0f) return;
+
+            var cfg = GameBalanceConfig.Instance;
+            var step = (cfg != null ? cfg.BossCoinDropHpStepPercent : 5f) / 100f;
+            if (step <= 0f) return;
+
+            var fraction = current / max;
+            while (fraction <= lastCoinDropHpFraction - step)
+            {
+                lastCoinDropHpFraction -= step;
+                CoinPickup.Spawn(transform.position);
+            }
         }
 
         float GetDamageMultiplier(GameBalanceConfig cfg)
@@ -87,6 +174,8 @@ namespace Game
         {
             var cfg = GameBalanceConfig.Instance;
 
+            UpdateMovementAnimator();
+
             // 移動アクションタイマー（BossMovementが実行中でない場合のみ更新・発動）
             if (!movement.IsMoving)
             {
@@ -98,19 +187,61 @@ namespace Game
                 }
             }
 
-            // 既存攻撃タイマー
+            // 通常攻撃: 吹き飛ばし(単独タイマー起点はウインドアップを挟んで避けやすくする)
             shockwaveTimer -= Time.deltaTime;
             if (shockwaveTimer <= 0f)
             {
                 shockwaveTimer = cfg != null ? cfg.BossShockwaveCooldown : 7f;
-                try { DoShockwave(cfg); } catch (System.Exception e) { Debug.LogException(e, this); }
+                try { StartCoroutine(CoShockwaveWindup(cfg)); } catch (System.Exception e) { Debug.LogException(e, this); }
             }
 
-            telegraphTimer -= Time.deltaTime;
-            if (telegraphTimer <= 0f)
+            // ボス専用技1〜3は互いに同時発動しないようにする(_specialAttackActiveで排他制御。
+            // 通常攻撃(吹き飛ばし/召喚)やBossMovementの4パターンとは重なってよい)。
+            const float specialAttackRetryDelay = 1f;
+
+            // ボス専用技1: 予告攻撃を画面右/左/上/下全体にする攻撃パターン(ラウンド1以降で解禁)
+            directionalWipeTimer -= Time.deltaTime;
+            if (directionalWipeTimer <= 0f)
             {
-                telegraphTimer = cfg != null ? cfg.BossTelegraphCooldown : 5f;
-                try { DoGroundTelegraph(cfg); } catch (System.Exception e) { Debug.LogException(e, this); }
+                if (difficultyRound >= 1 && !_specialAttackActive)
+                {
+                    directionalWipeTimer = cfg != null ? cfg.BossDirectionalWipeCooldown : 9f;
+                    try { DoDirectionalWipe(cfg); } catch (System.Exception e) { Debug.LogException(e, this); }
+                }
+                else
+                {
+                    directionalWipeTimer = specialAttackRetryDelay;
+                }
+            }
+
+            // ボス専用技2: 画面全体を覆う攻撃、グー防御で0ダメージ(ラウンド2以降で解禁)
+            fullCoverTimer -= Time.deltaTime;
+            if (fullCoverTimer <= 0f)
+            {
+                if (difficultyRound >= 2 && !_specialAttackActive)
+                {
+                    fullCoverTimer = cfg != null ? cfg.BossFullCoverCooldown : 11f;
+                    try { DoFullCoverPulse(cfg); } catch (System.Exception e) { Debug.LogException(e, this); }
+                }
+                else
+                {
+                    fullCoverTimer = specialAttackRetryDelay;
+                }
+            }
+
+            // ボス専用技3: ボス中心から円状の予告攻撃(ラウンド3以降で解禁)
+            centerRingTimer -= Time.deltaTime;
+            if (centerRingTimer <= 0f)
+            {
+                if (difficultyRound >= 3 && !_specialAttackActive)
+                {
+                    centerRingTimer = cfg != null ? cfg.BossCenterRingCooldown : 13f;
+                    try { DoCenterRing(cfg); } catch (System.Exception e) { Debug.LogException(e, this); }
+                }
+                else
+                {
+                    centerRingTimer = specialAttackRetryDelay;
+                }
             }
 
             summonTimer -= Time.deltaTime;
@@ -127,6 +258,116 @@ namespace Game
                     Debug.LogException(e, this);
                 }
             }
+        }
+
+        // 移動アニメーション用: 実際の位置変化から速度を推定する(BossMovementがMovePositionで
+        // 動かすためRigidbody.linearVelocityに頼らない、物理駆動でなくても正しく動く方式)。
+        void UpdateMovementAnimator()
+        {
+            if (_animator != null)
+            {
+                var delta = transform.position - lastPosition;
+                delta.y = 0f;
+                var speed = delta.magnitude / Mathf.Max(Time.deltaTime, 0.0001f);
+                _animator.SetFloat(AnimMoveSpeed, speed);
+                _animator.SetBool(AnimIsMoving, movement.IsMoving);
+            }
+            lastPosition = transform.position;
+        }
+
+        IEnumerator CoShockwaveWindup(GameBalanceConfig cfg)
+        {
+            var windup = cfg != null ? cfg.BossKnockbackWindupSeconds : 0.6f;
+            if (windup > 0f) yield return new WaitForSeconds(windup);
+            DoShockwave(cfg);
+        }
+
+        // ボス専用技1: 上下左右いずれかをランダムに選び、アリーナのその半面を覆う矩形予告を出す。
+        void DoDirectionalWipe(GameBalanceConfig cfg)
+        {
+            var warning = cfg != null ? cfg.BossDirectionalWipeWarningSeconds : 2f;
+            var damage = (cfg != null ? cfg.BossDirectionalWipeDamage : 18f) * GetDamageMultiplier(cfg);
+            BeginSpecialAttack(warning);
+
+            var center = movement.AreaCenter;
+            var radius = movement.AreaRadius;
+
+            Vector2 size;
+            Vector3 zoneCenter;
+            switch (Random.Range(0, 4))
+            {
+                case 0: // 右半分
+                    size = new Vector2(radius, radius * 2f);
+                    zoneCenter = center + new Vector3(radius * 0.5f, 0f, 0f);
+                    break;
+                case 1: // 左半分
+                    size = new Vector2(radius, radius * 2f);
+                    zoneCenter = center + new Vector3(-radius * 0.5f, 0f, 0f);
+                    break;
+                case 2: // 奥半分
+                    size = new Vector2(radius * 2f, radius);
+                    zoneCenter = center + new Vector3(0f, 0f, radius * 0.5f);
+                    break;
+                default: // 手前半分
+                    size = new Vector2(radius * 2f, radius);
+                    zoneCenter = center + new Vector3(0f, 0f, -radius * 0.5f);
+                    break;
+            }
+            zoneCenter.y = transform.position.y;
+
+            RectTelegraphZone.Spawn(zoneCenter, size, warning, damage, identity, false, _telegraphWarningSound, _telegraphDetonateSound);
+            TriggerSpecialAttackAnim();
+            BossWarningUI.ShowInstruction("人差し指でキャラを移動させてよけろ！", warning + 0.5f);
+            ScoreBorderUI.FlashRed(warning + 0.3f);
+        }
+
+        // ボス専用技2: 位置に関わらずアリーナ全体に命中する予告攻撃。グー防御中は完全無効化する。
+        void DoFullCoverPulse(GameBalanceConfig cfg)
+        {
+            var warning = cfg != null ? cfg.BossFullCoverWarningSeconds : 1.8f;
+            var damage = (cfg != null ? cfg.BossFullCoverDamage : 22f) * GetDamageMultiplier(cfg);
+            BeginSpecialAttack(warning);
+
+            var center = movement.AreaCenter;
+            var radius = movement.AreaRadius;
+            var size = new Vector2(radius * 2.2f, radius * 2.2f); // アリーナ全体を覆うのに十分な余裕
+
+            RectTelegraphZone.Spawn(center, size, warning, damage, identity, true, _telegraphWarningSound, _telegraphDetonateSound);
+            TriggerSpecialAttackAnim();
+            BossWarningUI.ShowInstruction("グーで防御しろ", warning + 0.5f);
+            ScoreBorderUI.FlashRed(warning + 0.3f);
+        }
+
+        // ボス専用技3: ボスの現在位置を中心にした大型の円状予告攻撃。
+        void DoCenterRing(GameBalanceConfig cfg)
+        {
+            var warning = cfg != null ? cfg.BossCenterRingWarningSeconds : 1.8f;
+            var radius = cfg != null ? cfg.BossCenterRingRadius : 10f;
+            var damage = (cfg != null ? cfg.BossCenterRingDamage : 24f) * GetDamageMultiplier(cfg);
+            BeginSpecialAttack(warning);
+
+            GroundTelegraphZone.Spawn(transform.position, radius, warning, damage, identity, _telegraphWarningSound, _telegraphDetonateSound);
+            TriggerSpecialAttackAnim();
+            BossWarningUI.ShowInstruction("パーで離れろ！", warning + 0.5f);
+            ScoreBorderUI.FlashRed(warning + 0.3f);
+        }
+
+        void TriggerSpecialAttackAnim()
+        {
+            if (_animator != null) _animator.SetTrigger(AnimSpecialAttack);
+        }
+
+        // 専用技1〜3が互いに重ならないよう、発動〜着弾までの間_specialAttackActiveを立てる。
+        void BeginSpecialAttack(float warningSeconds)
+        {
+            _specialAttackActive = true;
+            StartCoroutine(CoClearSpecialAttackFlag(warningSeconds));
+        }
+
+        IEnumerator CoClearSpecialAttackFlag(float warningSeconds)
+        {
+            yield return new WaitForSeconds(Mathf.Max(0.05f, warningSeconds) + 0.1f);
+            _specialAttackActive = false;
         }
 
         // --- 4つの行動パターンの切り替え処理 ---
@@ -183,13 +424,16 @@ namespace Game
                 .First().transform;
         }
 
-        // --- 以下、既存の攻撃処理（DoShockwave, DoGroundTelegraph, TryDoSummon） ---
+        // --- 以下、既存の攻撃処理（DoShockwave, TryDoSummon） ---
+        // 通常攻撃「吹き飛ばす」。ジャンプ着地(BossMovement.CoJumpToTarget)のコールバックからも
+        // 直接呼ばれる(そちらは着地予告UI自体が予備動作を兼ねるため、ここでは追加のウインドアップを挟まない)。
         public void DoShockwave(GameBalanceConfig cfg)
         {
             var radius = cfg != null ? cfg.BossShockwaveRadius : 6f;
             var damage = (cfg != null ? cfg.BossShockwaveDamage : 15f) * GetDamageMultiplier(cfg);
             var knockback = cfg != null ? cfg.BossShockwaveKnockback : 25f;
 
+            TriggerKnockbackAnim();
             ExplosionRingEffect.Spawn(transform.position, radius, ShockwaveColor, 0.6f);
             ExplosionRingEffect.Spawn(transform.position, radius * 0.55f, ShockwaveColor, 0.4f);
             CameraShake.Shake(0.7f);
@@ -205,7 +449,8 @@ namespace Game
 
                 var health = targetIdentity.GetComponent<CharacterHealth>();
                 if (health == null || !health.IsAlive) continue;
-                health.ApplyDamage(damage, ShockwaveColor);
+                health.ApplyDamage(damage, ShockwaveColor, identity);
+                BossAttackFx.NotifyPlayerHit(targetIdentity);
 
                 var targetRb = targetIdentity.GetComponent<Rigidbody>();
                 if (targetRb != null)
@@ -217,26 +462,9 @@ namespace Game
             }
         }
 
-        void DoGroundTelegraph(GameBalanceConfig cfg)
+        void TriggerKnockbackAnim()
         {
-            var livingPlayers = CharacterRegistry.All.Where(c => c != null && c.Team == Team.Player && c.IsAlive).ToList();
-            if (livingPlayers.Count == 0) return;
-
-            var minZones = cfg != null ? cfg.BossTelegraphMinZones : 1;
-            var maxZones = cfg != null ? cfg.BossTelegraphMaxZones : 3;
-            var zoneCount = Random.Range(minZones, maxZones + 1);
-            var radius = cfg != null ? cfg.BossTelegraphRadius : 2.5f;
-            var warning = cfg != null ? cfg.BossTelegraphWarningSeconds : 1.3f;
-
-            var damage = (cfg != null ? cfg.BossTelegraphDamage : 20f) * GetDamageMultiplier(cfg);
-
-            for (var i = 0; i < zoneCount; i++)
-            {
-                var pickedTarget = livingPlayers[Random.Range(0, livingPlayers.Count)];
-                var jitter = Random.insideUnitCircle * 1.5f;
-                var zoneCenter = pickedTarget.transform.position + new Vector3(jitter.x, 0f, jitter.y);
-                GroundTelegraphZone.Spawn(zoneCenter, radius, warning, damage, identity, _telegraphWarningSound, _telegraphDetonateSound);
-            }
+            if (_animator != null) _animator.SetTrigger(AnimKnockback);
         }
 
         bool TryDoSummon(GameBalanceConfig cfg)
@@ -284,6 +512,9 @@ namespace Game
 
                 var summonActivation = instance.GetComponent<CharacterActivation>();
                 if (summonActivation != null) summonActivation.SetActive(true);
+
+                // 子分(召喚された雑魚)の死亡時にコインを落とせるよう、プレハブ側の設定に関わらず必ず後付けする。
+                if (instance.GetComponent<CoinDropOnDeath>() == null) instance.AddComponent<CoinDropOnDeath>();
 
                 CombatFx.ImpactBurst(spawnPos + Vector3.up * 0.5f, SummonColor, 0.35f);
             }

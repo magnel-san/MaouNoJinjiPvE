@@ -125,10 +125,29 @@ namespace Game
 
                 var health = targetIdentity.GetComponent<CharacterHealth>();
                 if (health == null || !health.IsAlive) continue;
-                health.ApplyDamage(damage, color);
+                health.ApplyDamage(damage, color, owner);
+                BossAttackFx.NotifyPlayerHit(targetIdentity);
             }
 
+            NotifyNearMissDodges(affected);
+
             Destroy(gameObject);
+        }
+
+        // 着弾範囲のすぐ外にいた(=間一髪よけられた)プレイヤーキャラにDODGE表示を出す。
+        void NotifyNearMissDodges(HashSet<CharacterIdentity> hitTargets)
+        {
+            const float nearMissMultiplier = 1.6f;
+            var nearMissRadius = Radius * nearMissMultiplier;
+
+            foreach (var c in CharacterRegistry.All)
+            {
+                if (c == null || c.Team != Team.Player || !c.IsAlive || hitTargets.Contains(c)) continue;
+                if (Vector3.Distance(c.transform.position, transform.position) <= nearMissRadius)
+                {
+                    BossAttackFx.NotifyPlayerDodged(c);
+                }
+            }
         }
     }
 }

@@ -12,12 +12,12 @@ namespace Game
     // MediaPipe側の追加設定は不要。
     //
     // 利き手(HandPreference、ゲーム開始直後にHandPreferenceSelectUIで選択済み)のパーム中心を
-    // カーソル位置とし、その手の静的な形(人差し指のみ/パー/グッドサイン/バッドサイン)で
-    // keyboard1〜4相当のコマンドを決定する。それとは別に、左右両方の手が同時に検出できた場合のみ
-    // 「両手パーを2秒キープ」を判定し、keyboard6相当(必殺技)をUltimateGaugeControllerへ直接要求する
-    // (こちらは利き手に関係なく両手を見る)。加えて、人差し指+小指のみ伸展(IndexPinky)は
-    // 片手だけでもゲージが溜まっていれば即座に必殺技を要求できる簡易トリガーにしている
-    // (利き手に関係なくどちらかの手で成立すればよい)。
+    // カーソル位置とし、その手の静的な形(人差し指のみ/パー)で移動系コマンドを決定する:
+    // 人差し指のみ→集合(Rally)、パー→よける(Flee、危険地帯回避込み)。それとは別に、左右両方の手が
+    // 同時に検出できた場合のみ「両手パーを2秒キープ」を判定し、keyboard6相当(必殺技)を
+    // UltimateGaugeControllerへ直接要求する(こちらは利き手に関係なく両手を見る)。加えて、
+    // 人差し指+小指のみ伸展(IndexPinky)は片手だけでもゲージが溜まっていれば即座に必殺技を
+    // 要求できる簡易トリガーにしている(利き手に関係なくどちらかの手で成立すればよい)。
     //
     // NOTE: 一度MediaPipe GestureRecognizer(学習済み定番ジェスチャー分類)へ切り替えたが、
     // バンドル内のhand_landmarker.taskをネイティブ側が解決できずロードに失敗する既知の問題があったため、
@@ -26,15 +26,14 @@ namespace Game
     // 別の閾値を使う)を掛けているため、_leftFingerState/_rightFingerStateに前フレームの状態を保持し、
     // 毎フレームHandPoseClassifier.GetFingerStateへ渡す。
     //
-    // 回復はもともとILoveYouサイン(親指+人差し指+小指を伸ばす)→バッドサイン(親指下向き)と経てきたが、
-    // 実機での検出率(反応の良さ)を踏まえ、最も安定して認識できるチョキに割り当てた。
-    // それに伴いチョキが担っていた「ボス集中攻撃」はバッドサイン(ThumbDown)に、
-    // グッドサイン(ThumbUp)は元々の「ボス以外集中攻撃(雑魚攻撃)」のまま、という組み合わせにしている
-    // (ClassifyPose/PoseLabel/ApplyCommand参照)。
-    // 回復は上記の離散コマンドとは別枠の「持続効果」として扱い、出している間ずっと味方全体を
-    // 微量回復し続ける(UpdateHealPulse参照)。
+    // 防御(グー)は離散コマンドとは別枠の「持続効果」として扱い、出している間ずっと
+    // BattleCommandState.GuardActiveを立てる(実際のダメージ軽減はCharacterHealth.ApplyDamageが
+    // 行う。UpdateGuardHold参照)。以前チョキに割り当てていた回復、および親指の向き(グッドサイン/
+    // バッドサイン)によるボス集中攻撃/ボス以外集中攻撃コマンドは廃止した
+    // (Scissors/ThumbUp/ThumbDownのポーズ自体はHandPoseClassifierが検出するが、
+    // ApplyCommand/PoseLabelでは使用しない。チョキは将来また使う可能性があるため判定だけ残してある)。
     //
-    // コマンドが新しく確定した瞬間、および回復が開始した瞬間にCommandAnnouncerで
+    // コマンドが新しく確定した瞬間、および防御が開始した瞬間にCommandAnnouncerで
     // 「命令：〜が発動！」を画面へ表示する(演出をわかりやすくするためのフィードバック)。
     //
     // 手が検出されていない間(HasHandDataThisFrame=false)は何もしない。BattleCursorInputDebugが
@@ -54,9 +53,6 @@ namespace Game
         [Tooltip("両手ともパーの状態を何秒キープしたら必殺技(keyboard6相当)を発動するか")]
         [SerializeField] private float _bothHandsOpenHoldSeconds = 2f;
 
-        [Header("回復（バッドサイン/親指下向き）")]
-        [Tooltip("バッドサイン(親指のみ伸展、下向き)をどちらかの手で出している間、味方全体に与える回復量(HP/秒)")]
-        [SerializeField] private float _healPerSecond = 20f;
 
         [Header("デバッグ")]
         [Tooltip("各指の生の判定値(直線度/距離比)と伸展/屈曲の状態を画面左上にリアルタイム表示する。" +
@@ -69,7 +65,7 @@ namespace Game
         HandPose _confirmedPose = HandPose.None;
         float _pendingTimer;
         float _bothHandsHoldTimer;
-        bool _healing;
+        bool _guarding;
 
         // ヒステリシス計算のために前フレームの指の伸展/屈曲状態を保持する(HandPoseClassifier参照)。
         HandPoseClassifier.FingerState _leftFingerState;
@@ -103,7 +99,7 @@ namespace Game
             if (_handTrackingController != null) _handTrackingController.OnHandLandmarkerResult -= HandleResult;
             HasHandDataThisFrame = false;
             _bothHandsHoldTimer = 0f;
-            UpdateHealPulse(false);
+            UpdateGuardHold(false);
         }
 
         void HandleResult(HandLandmarkerResult result)
@@ -115,7 +111,7 @@ namespace Game
             if (result.handWorldLandmarks == null || _handTrackingController == null)
             {
                 UpdateBothHandsHold(false);
-                UpdateHealPulse(false);
+                UpdateGuardHold(false);
                 UpdateConfirmedPose(HandPose.None);
                 return;
             }
@@ -147,8 +143,8 @@ namespace Game
             // 利き手に関係なく、両手が同時にパーであるかどうかを見る(必殺技の発動条件)。
             UpdateBothHandsHold(leftPose == HandPose.OpenPalm && rightPose == HandPose.OpenPalm);
 
-            // チョキも利き手に関係なく、どちらかの手で出ていれば回復し続ける(離散コマンドとは独立)。
-            UpdateHealPulse(leftPose == HandPose.Scissors || rightPose == HandPose.Scissors);
+            // グーも利き手に関係なく、どちらかの手で出ていれば防御状態にする(離散コマンドとは独立)。
+            UpdateGuardHold(leftPose == HandPose.Fist || rightPose == HandPose.Fist);
 
             // 人差し指+小指も利き手に関係なく、片手だけで即発動要求できる(両手パー2秒キープの簡易版)。
             // TryTriggerFromExternal側でIsReady&&!IsBoostActiveを見ているので、ゲージ未満なら何も起きず、
@@ -177,6 +173,8 @@ namespace Game
 
         void UpdateBothHandsHold(bool bothOpen)
         {
+            BattleCommandState.SetBothHandsOpen(bothOpen);
+
             if (bothOpen)
             {
                 _bothHandsHoldTimer += Time.deltaTime;
@@ -194,21 +192,23 @@ namespace Game
             }
         }
 
-        // チョキを出している間、味方全体(Team.Player)を毎フレームdeltaTime分だけ回復し続ける。
-        // 開始した瞬間だけCommandAnnouncerで通知する(毎フレーム通知すると連呼になるため)。
-        void UpdateHealPulse(bool active)
+        // グーを出している間、BattleCommandState.GuardActiveを立てるだけの持続コマンド。
+        // 実際のダメージ軽減はCharacterHealth.ApplyDamageがGuardActiveを見て行う
+        // (このメソッドはフラグの管理と開始時のアナウンス・盾装備効果音のみを担当する)。
+        void UpdateGuardHold(bool active)
         {
-            if (active && !_healing) CommandAnnouncer.Announce("回復");
-            _healing = active;
-            if (!active) return;
-
-            var amount = _healPerSecond * Time.deltaTime;
-            foreach (var c in CharacterRegistry.All)
+            if (active && !_guarding)
             {
-                if (c == null || c.Team != Team.Player || !c.IsAlive) continue;
-                var health = c.GetComponent<CharacterHealth>();
-                if (health != null) health.Heal(amount);
+                CommandAnnouncer.Announce("防御");
+                var cfg = GameBalanceConfig.Instance;
+                if (cfg != null)
+                {
+                    var cam = Camera.main;
+                    SfxUtil.PlayAt(cfg.GuardEquipSound, cam != null ? cam.transform.position : transform.position);
+                }
             }
+            _guarding = active;
+            BattleCommandState.SetGuardActive(active);
         }
 
         static Vector3[] ToVector3Array(List<Landmark> lm)
@@ -248,6 +248,14 @@ namespace Game
             if (!f.Thumb && f.Index && f.Middle && !f.Ring && !f.Pinky) return HandPose.Scissors;
             if (!f.Thumb && f.Index && !f.Middle && !f.Ring && f.Pinky) return HandPose.IndexPinky;
 
+            // グー: 親指含め5指すべて屈曲。ThumbUp/ThumbDown(親指だけ上/下に突き出す)と区別するため、
+            // 親指の向きがNeutral(はっきり上でも下でもない=握り込んでいる)場合のみグーとみなす。
+            if (!f.Thumb && !f.Index && !f.Middle && !f.Ring && !f.Pinky
+                && thumbDir == HandPoseClassifier.ThumbDirection.Neutral)
+            {
+                return HandPose.Fist;
+            }
+
             if (thumbDir != HandPoseClassifier.ThumbDirection.Neutral && !AnyClearlyExtended(m, clearlyExtendedThreshold))
                 return thumbDir == HandPoseClassifier.ThumbDirection.Down ? HandPose.ThumbDown : HandPose.ThumbUp;
 
@@ -257,14 +265,12 @@ namespace Game
         static bool AnyClearlyExtended(HandPoseClassifier.FingerMetrics m, float threshold) =>
             m.Index > threshold || m.Middle > threshold || m.Ring > threshold || m.Pinky > threshold;
 
-        // ApplyCommandと対になる、CommandAnnouncer用の表示名。Scissors(回復)はUpdateHealPulseが
-        // 独自に「回復」を通知するため、ここではnull(無表示)にして二重通知を避ける。
+        // ApplyCommandと対になる、CommandAnnouncer用の表示名。Scissors(防御)はUpdateGuardHoldが
+        // 独自に「防御」を通知するため、ここではnull(無表示)にして二重通知を避ける。
         static string PoseLabel(HandPose pose) => pose switch
         {
             HandPose.IndexOnly => "集合",
-            HandPose.OpenPalm => "退避",
-            HandPose.ThumbUp => "ボス以外集中攻撃",
-            HandPose.ThumbDown => "ボス集中攻撃",
+            HandPose.OpenPalm => "よける",
             _ => null,
         };
 
@@ -319,12 +325,6 @@ namespace Game
                     break;
                 case HandPose.OpenPalm:
                     BattleCommandState.SubmitGesture(PlayerCommandType.Flee, groundPos, FocusFireFilter.None);
-                    break;
-                case HandPose.ThumbUp:
-                    BattleCommandState.SubmitGesture(PlayerCommandType.None, groundPos, FocusFireFilter.ExcludeBoss);
-                    break;
-                case HandPose.ThumbDown:
-                    BattleCommandState.SubmitGesture(PlayerCommandType.None, groundPos, FocusFireFilter.BossOnly);
                     break;
                 default:
                     BattleCommandState.SubmitGesture(PlayerCommandType.None, groundPos, FocusFireFilter.None);

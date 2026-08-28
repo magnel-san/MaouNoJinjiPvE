@@ -41,7 +41,11 @@ namespace Game
             var toCenter = BattleCommandState.RallyWorldPosition - transform.position;
             toCenter.y = 0f;
             var dist = toCenter.magnitude;
-            var arriveRadius = Mathf.Max(BattleCommandState.RallyRadius, RallyArriveRadius);
+            // BattleCommandState.RallyRadius(既定3.5m)は「だいたいこの辺りに集まれ」という
+            // 表示用の円の大きさであり、実際に停止する距離としては大きすぎる(回復/遠距離維持タイプが
+            // 集合命令でボスの位置へ集まらせても、ボスの手前で止まってしまい接触ダメージを与えられない
+            // 原因になっていた)。実際の停止距離はRallyArriveRadius単独で決める。
+            var arriveRadius = RallyArriveRadius;
 
             if (dist <= arriveRadius)
             {
@@ -78,7 +82,7 @@ namespace Game
             return true;
         }
 
-        // 現在アクティブな警告円のうち、危険域(半径+安全マージン)に入っているものすべてから
+        // 現在アクティブな警告円・警告矩形のうち、危険域に入っているものすべてから
         // 離れる方向を合成する。近いものほど強く効かせる。危険域に何もいなければfalseを返す。
         bool TryGetTelegraphAvoidance(out Vector3 avoidDirection)
         {
@@ -101,10 +105,54 @@ namespace Game
                 hasDanger = true;
             }
 
+            if (TryGetRectTelegraphAvoidance(out var rectDir))
+            {
+                avoidDirection += rectDir;
+                hasDanger = true;
+            }
+
             if (!hasDanger || avoidDirection.sqrMagnitude < 0.0001f) return false;
 
             avoidDirection.Normalize();
             return true;
+        }
+
+        // 矩形の警告ゾーン(RectTelegraphZone)の内側にいる場合、最も近い辺へ抜け出す方向を返す。
+        // 矩形は半画面規模の巨大サイズを想定しているため、円のような「危険域まで距離」ではなく
+        // 「ゾーンの内側にいるかどうか」だけを見て、内側なら常に一定以上の緊急度で押し出す。
+        bool TryGetRectTelegraphAvoidance(out Vector3 avoidDirection)
+        {
+            avoidDirection = Vector3.zero;
+            var hasDanger = false;
+
+            foreach (var zone in RectTelegraphZone.Active)
+            {
+                if (zone == null) continue;
+
+                var local = transform.position - zone.Center;
+                local.y = 0f;
+
+                var distPosX = zone.HalfExtents.x - local.x;
+                var distNegX = zone.HalfExtents.x + local.x;
+                var distPosZ = zone.HalfExtents.y - local.z;
+                var distNegZ = zone.HalfExtents.y + local.z;
+
+                if (distPosX <= 0f || distNegX <= 0f || distPosZ <= 0f || distNegZ <= 0f) continue; // 外側にいるなら退避不要
+
+                var minDist = Mathf.Min(Mathf.Min(distPosX, distNegX), Mathf.Min(distPosZ, distNegZ));
+                Vector3 dir;
+                if (minDist == distPosX) dir = Vector3.right;
+                else if (minDist == distNegX) dir = Vector3.left;
+                else if (minDist == distPosZ) dir = Vector3.forward;
+                else dir = Vector3.back;
+
+                var span = Mathf.Max(Mathf.Min(zone.HalfExtents.x, zone.HalfExtents.y), 0.0001f);
+                var weight = Mathf.Max(0.5f, 1f - Mathf.Clamp01(minDist / span));
+                avoidDirection += dir * weight;
+                hasDanger = true;
+            }
+
+            return hasDanger;
         }
     }
 }

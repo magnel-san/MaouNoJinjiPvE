@@ -24,7 +24,8 @@ namespace Game
             {
                 if (b == this) continue;
                 if (b is IMovementIntentSource || b is CharacterMovement || b is CharacterPosture
-                    || b is BoundaryAvoidance || b is CharacterChargeAssist || b is BossController)
+                    || b is BoundaryAvoidance || b is CharacterChargeAssist || b is BossController
+                    || b is FinalHeroController)
                 {
                     list.Add(b);
                 }

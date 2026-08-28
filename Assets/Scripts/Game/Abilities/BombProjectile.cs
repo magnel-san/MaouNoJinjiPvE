@@ -46,7 +46,7 @@ namespace Game
 
                 var health = targetIdentity.GetComponent<CharacterHealth>();
                 if (health == null || !health.IsAlive) continue;
-                health.ApplyDamage(damage, color);
+                health.ApplyDamage(damage, color, owner);
 
                 var rb = targetIdentity.GetComponent<Rigidbody>();
                 if (rb != null)

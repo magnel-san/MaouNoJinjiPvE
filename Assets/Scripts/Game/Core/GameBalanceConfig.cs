@@ -59,19 +59,39 @@ namespace Game
         public float BossShockwaveRadius = 6f;
         public float BossShockwaveDamage = 15f;
         public float BossShockwaveKnockback = 25f;
-        [Tooltip("予告→着弾までの警告表示秒数")]
-        public float BossTelegraphCooldown = 5f;
-        public float BossTelegraphWarningSeconds = 1.3f;
-        public float BossTelegraphRadius = 2.5f;
-        public float BossTelegraphDamage = 20f;
-        public int BossTelegraphMinZones = 1;
-        public int BossTelegraphMaxZones = 3;
         [Tooltip("召喚の再発動間隔(秒)")]
         public float BossSummonCooldown = 12f;
         public int BossSummonMinCount = 2;
         public int BossSummonMaxCount = 3;
         [Tooltip("同時に生存できる召喚体の上限(これを超えている間は召喚をスキップする)")]
         public int BossSummonMaxConcurrent = 6;
+        [Tooltip("通常攻撃「吹き飛ばし」を単独タイマーで発動する際のウインドアップ秒数" +
+          "(避けやすくするための予備動作。ジャンプ着地から呼ばれる経路は別途ジャンプ自体の予告があるため対象外)")]
+        public float BossKnockbackWindupSeconds = 0.6f;
+        [Tooltip("ボスのHPがこの割合(%)削れるたびにコインを1枚落とす")]
+        public float BossCoinDropHpStepPercent = 5f;
+
+        [Header("ボス専用技1: 予告攻撃を画面右/左/上/下全体にする攻撃パターン (ラウンド1以降で解禁)")]
+        public float BossDirectionalWipeCooldown = 9f;
+        public float BossDirectionalWipeWarningSeconds = 2f;
+        public float BossDirectionalWipeDamage = 18f;
+
+        [Header("ボス専用技2: 画面全体を覆う攻撃、グー防御で0ダメージ (ラウンド2以降で解禁)")]
+        public float BossFullCoverCooldown = 11f;
+        public float BossFullCoverWarningSeconds = 1.8f;
+        public float BossFullCoverDamage = 22f;
+
+        [Header("防御(グー)の効果音")]
+        [Tooltip("グー(防御)を構え始めた瞬間に鳴らす、盾を装備する効果音。ここに設定するとゲーム全体で使われる")]
+        public AudioClip GuardEquipSound;
+        [Tooltip("ボス2の全体攻撃をグーで防御し切った(0ダメージにできた)瞬間に鳴らす、はじく効果音")]
+        public AudioClip GuardBlockSound;
+
+        [Header("ボス専用技3: ボス中心から円状の予告攻撃 (ラウンド3以降で解禁)")]
+        public float BossCenterRingCooldown = 13f;
+        public float BossCenterRingWarningSeconds = 1.8f;
+        public float BossCenterRingRadius = 10f;
+        public float BossCenterRingDamage = 24f;
         [Tooltip("ボス戦は3回行う(1回目クリア後に採用キャラを2体追加、2回目クリア後にさらに2体追加)。" +
           "各回のボスの最大HP・攻撃ダメージに掛ける倍率。要素数3(1回目/2回目/3回目)")]
         public float[] BossRoundMultiplier = { 1f, 1.7f, 2.6f };

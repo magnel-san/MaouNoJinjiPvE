@@ -43,7 +43,10 @@ namespace Game
             float dist = Vector3.Distance(transform.position, target.transform.position);
             IsHoldingDistance = dist <= MaxDistance && dist >= MinDistance;
 
-            if (IsHoldingDistance && cooldownTimer <= 0f)
+            // 発射条件はMaxDistance以内にいることだけを見る(MinDistanceより近い=詰め寄られている間も
+            // 撃てるようにする)。前衛が居ない編成でボスに詰め寄られ続けると、理想の距離帯に入れず
+            // 一切攻撃できなくなっていたため。
+            if (dist <= MaxDistance && cooldownTimer <= 0f)
             {
                 FireArrow(target);
                 var cfg = GameBalanceConfig.Instance;

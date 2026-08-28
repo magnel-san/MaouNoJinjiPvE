@@ -41,7 +41,7 @@ namespace Game
                     var health = targetIdentity.GetComponent<CharacterHealth>();
                     if (health != null && health.IsAlive)
                     {
-                        health.ApplyDamage(damage, new Color(1f, 1f, 0.6f));
+                        health.ApplyDamage(damage, new Color(1f, 1f, 0.6f), owner);
                         Destroy(gameObject);
                         return;
                     }

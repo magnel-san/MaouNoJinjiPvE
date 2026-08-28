@@ -48,13 +48,10 @@ namespace Game
 
         private void LateUpdate()
         {
-            if (_boss == null)
-            {
-                FindBossInstance();
-                if (_boss == null) return;
-            }
+            if (_boss == null) FindBossInstance();
 
-            // 1. 位置の更新
+            // 1. 位置の更新(ボス出現前の練習フェーズ等でボスが見つからない間は、
+            //    生存しているキャラ全員の重心を追従することでカメラが完全に停止しないようにする)。
             UpdateCameraPosition();
 
             // 2. モンスターが画面外に出ないよう画角（FOV）を自動ズームアウト調整
@@ -77,24 +74,50 @@ namespace Game
 
         private void UpdateCameraPosition()
         {
-            Vector3 bossPos = _boss.transform.position;
-            Vector3 targetPos;
+            Vector3 focusBasePos;
+            if (_boss != null)
+            {
+                focusBasePos = _boss.transform.position;
+            }
+            else if (!TryGetLivingCharactersCentroid(out focusBasePos))
+            {
+                return; // 追従対象が(ボスも生存キャラも)何も無ければ、現在位置のまま何もしない
+            }
 
+            Vector3 targetPos;
             bool isRallyActive = BattleCommandState.CommandType == PlayerCommandType.Rally;
 
             if (isRallyActive)
             {
                 Vector3 rallyPos = BattleCommandState.RallyWorldPosition;
                 // _focusRatio が 0.75 のため、円のカーソル側にぐっと寄った位置をカメラが注視します
-                Vector3 focusPoint = Vector3.Lerp(bossPos, rallyPos, _focusRatio);
+                Vector3 focusPoint = Vector3.Lerp(focusBasePos, rallyPos, _focusRatio);
                 targetPos = focusPoint + _cameraOffset;
             }
             else
             {
-                targetPos = bossPos + _cameraOffset;
+                targetPos = focusBasePos + _cameraOffset;
             }
 
             transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * _smoothSpeed);
+        }
+
+        // ボスがまだ出現していない(練習フェーズ等)場合のフォールバック: 生存している全キャラ
+        // (プレイヤー側モンスター・練習用の雑魚等)の重心を返す。1体も居なければfalseを返す。
+        private bool TryGetLivingCharactersCentroid(out Vector3 centroid)
+        {
+            centroid = Vector3.zero;
+            var count = 0;
+            var healths = FindObjectsByType<CharacterHealth>(FindObjectsInactive.Exclude);
+            foreach (var hp in healths)
+            {
+                if (!hp.IsAlive) continue;
+                centroid += hp.transform.position;
+                count++;
+            }
+            if (count == 0) return false;
+            centroid /= count;
+            return true;
         }
 
         // モンスターが画面外へ行った際にカメラを引く（FOVを広げる）処理

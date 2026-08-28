@@ -77,7 +77,7 @@ namespace Game
             lastHitTime[identity] = Time.time;
 
             var health = identity.GetComponent<CharacterHealth>();
-            if (health != null && health.IsAlive) health.ApplyDamage(damage, new Color(0.6f, 0.9f, 1f));
+            if (health != null && health.IsAlive) health.ApplyDamage(damage, new Color(0.6f, 0.9f, 1f), ownerIdentity);
         }
     }
 }

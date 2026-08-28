@@ -25,6 +25,17 @@ namespace Game
         public static float RallyRadius = 3.5f;
         public static FocusFireFilter FocusFilter { get; private set; } = FocusFireFilter.None;
 
+        // グー(防御)を保持している間だけtrueになる。CommandTypeとは独立した持続フラグ
+        // (退避/集合のような単発の移動コマンドではなく、出している間ずっと効く効果のため)。
+        public static bool GuardActive { get; private set; }
+        public static void SetGuardActive(bool active) => GuardActive = active;
+
+        // 両手パーを今まさに維持しているかどうか(2秒キープの必殺技トリガーとは別の、
+        // フレーム単位の連続状態)。最終決戦のカメラビーム(FinalBattleBeamController)が
+        // これを見て、両手パーが続く限り連射する。
+        public static bool BothHandsOpenActive { get; private set; }
+        public static void SetBothHandsOpen(bool active) => BothHandsOpenActive = active;
+
         static float _lastGestureWriteTime = -999f;
 
         // ジェスチャー側は常にステートを更新できる(最優先)。
@@ -51,6 +62,8 @@ namespace Game
         {
             CommandType = PlayerCommandType.None;
             FocusFilter = FocusFireFilter.None;
+            GuardActive = false;
+            BothHandsOpenActive = false;
             _lastGestureWriteTime = -999f;
         }
     }

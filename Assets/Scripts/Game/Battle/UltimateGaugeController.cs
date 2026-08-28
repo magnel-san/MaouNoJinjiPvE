@@ -32,12 +32,24 @@ namespace Game
         // ブースト解除時に確実に元へ戻せるよう、倍率をかけた対象を(死亡・ラウンド跨ぎも含めて)覚えておく。
         readonly List<Transform> boostedCharacters = new List<Transform>();
 
+        // 最終決戦専用: trueの間はゲージを常に100%表示にし、通常のブースト発動(スタット強化)を行わない。
+        // 両手パーでの発動はFinalBattleBeamControllerがBattleCommandState.BothHandsOpenActiveを見て
+        // 直接処理するため、こちらは「普段のブーストを暴発させない」ためだけに使う。
+        public bool FinalBattleMode { get; private set; }
+
+        public void SetFinalBattleMode(bool active)
+        {
+            FinalBattleMode = active;
+            if (active) GaugeFraction = 1f;
+        }
+
         void OnEnable()
         {
             GaugeFraction = 0f;
             IsBoostActive = false;
             boostTimer = 0f;
             boostedCharacters.Clear();
+            FinalBattleMode = false;
         }
 
         void OnDisable()
@@ -47,6 +59,14 @@ namespace Game
 
         void Update()
         {
+            if (FinalBattleMode)
+            {
+                // 最終決戦中は常に100%表示にするだけで、通常のブースト(スタット強化)は発動させない
+                // (発動はFinalBattleBeamControllerが両手パーの継続を見て別途処理する)。
+                GaugeFraction = 1f;
+                return;
+            }
+
             if (IsBoostActive)
             {
                 boostTimer -= Time.deltaTime;
@@ -70,8 +90,10 @@ namespace Game
         }
 
         // ジェスチャー側(両手パーを2秒キープ)からの発動要求用。キーボード6と同じ条件を満たす場合のみ発動する。
+        // 最終決戦中はここでの通常ブーストは無効(ビームはFinalBattleBeamController側で処理する)。
         public void TryTriggerFromExternal()
         {
+            if (FinalBattleMode) return;
             if (IsReady && !IsBoostActive) TriggerBoost();
         }
 

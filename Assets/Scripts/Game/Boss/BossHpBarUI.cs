@@ -25,7 +25,15 @@ namespace Game
         Canvas canvas;
         Image fillImage;
         Image flashImage;
+        Text nameText;
         float flashTimer;
+
+        // 動的にAddComponentする場合(最終決戦の勇者等)、Inspectorで設定できない名前をここで上書きする。
+        public void SetName(string name)
+        {
+            _bossName = name;
+            if (nameText != null) nameText.text = name;
+        }
 
         void Awake()
         {
@@ -68,7 +76,7 @@ namespace Game
             var nameRect = NewChildRect("Name", barRoot, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f));
             nameRect.anchoredPosition = new Vector2(0f, 22f);
             nameRect.sizeDelta = new Vector2(0f, 24f);
-            var nameText = nameRect.gameObject.AddComponent<Text>();
+            nameText = nameRect.gameObject.AddComponent<Text>();
             nameText.text = _bossName;
             nameText.font = VfxShaderUtil.GetDefaultFont();
             nameText.fontSize = 22;
