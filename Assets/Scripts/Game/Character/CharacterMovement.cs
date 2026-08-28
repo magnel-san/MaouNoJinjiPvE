@@ -21,6 +21,10 @@ namespace Game
         [Tooltip("目的方向に対して横向きの速度(公転・オーバーシュートの原因)を打ち消す強さ")]
         public float LateralDamping = 4f;
 
+        [Header("切り返し・操作性向上")]
+        [Tooltip("進行方向と「逆」に進んでいる際に、前の慣性を打ち消すブレーキの強さ（高いほどキレのある切り返しになります）")]
+        public float ReverseBrakePower = 15f;
+
         Rigidbody rb;
         CharacterStats stats;
         CharacterPosture posture;
@@ -90,17 +94,31 @@ namespace Game
             {
                 Vector3 desiredDir = finalDir.normalized;
 
-                // 目的方向(水平面)に対して横向きの速度成分を減衰させ、公転・オーバーシュートを防ぐ。
-                // Y成分は触らない(Bタイプの揚力・落下など垂直方向の制御を妨げないため)。
+                // 水平面上の現在の速度を取得 (Y軸成分は無視)
+                Vector3 currentVelFlat = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
                 Vector3 desiredDirFlat = new Vector3(desiredDir.x, 0f, desiredDir.z);
+
                 if (desiredDirFlat.sqrMagnitude > 0.0001f)
                 {
                     desiredDirFlat.Normalize();
-                    Vector3 velFlat = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-                    Vector3 lateralVel = velFlat - Vector3.Dot(velFlat, desiredDirFlat) * desiredDirFlat;
+
+                    // --- 1. 横方向の速度成分を打ち消す (既存処理) ---
+                    Vector3 lateralVel = currentVelFlat - Vector3.Dot(currentVelFlat, desiredDirFlat) * desiredDirFlat;
                     rb.AddForce(-lateralVel * LateralDamping, ForceMode.Acceleration);
+
+                    // --- 2. ★追加：逆方向（後ろ向き）の速度成分を打ち消すブレーキ処理 ---
+                    float forwardSpeed = Vector3.Dot(currentVelFlat, desiredDirFlat);
+                    if (forwardSpeed < 0f) // 進みたい方向と「逆」に動いている場合
+                    {
+                        // 逆方向への速度ベクトルを取り出す
+                        Vector3 reverseVel = forwardSpeed * desiredDirFlat;
+                        
+                        // 反対方向への慣性を力強く相殺（ブレーキをかける）
+                        rb.AddForce(-reverseVel * ReverseBrakePower, ForceMode.Acceleration);
+                    }
                 }
 
+                // --- 3. 目標方向への推進力を与える ---
                 float alignment = Vector3.Dot(transform.forward, desiredDir);
                 rb.AddForce(transform.forward * (stats.MoveSpeed * speedMultiplier * alignment), ForceMode.Acceleration);
             }

@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 777509750735565401, guid: 15502dc36db9abd44b5c0987d140bf7b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.846
+      objectReference: {fileID: 0}
     - target: {fileID: 3570752688699024579, guid: 15502dc36db9abd44b5c0987d140bf7b, type: 3}
       propertyPath: AttackCooldownTier
       value: 5
@@ -23,6 +27,18 @@ PrefabInstance:
     - target: {fileID: 3570752688699024579, guid: 15502dc36db9abd44b5c0987d140bf7b, type: 3}
       propertyPath: GroundedVulnerableDuration
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4565941916813802172, guid: 15502dc36db9abd44b5c0987d140bf7b, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4565941916813802172, guid: 15502dc36db9abd44b5c0987d140bf7b, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4565941916813802172, guid: 15502dc36db9abd44b5c0987d140bf7b, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4565941916813802172, guid: 15502dc36db9abd44b5c0987d140bf7b, type: 3}
       propertyPath: m_LocalPosition.x

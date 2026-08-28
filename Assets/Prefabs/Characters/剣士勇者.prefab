@@ -123,6 +123,7 @@ MonoBehaviour:
   FallDeathDespawnDelay: 3
   HitSound: {fileID: 8300000, guid: 4322f517e2fe6a94fbce5f148f83d6a3, type: 3}
   DeathSound: {fileID: 8300000, guid: 61d902bc0de063644895b26bb8f497f6, type: 3}
+  deathGhostAlpha: 0.8
 --- !u!114 &4285270918016135148
 MonoBehaviour:
   m_ObjectHideFlags: 0

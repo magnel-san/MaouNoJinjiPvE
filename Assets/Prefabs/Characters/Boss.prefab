@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 76960506825880221}
   - component: {fileID: 4773875993434297016}
   - component: {fileID: 5487875094883961232}
+  - component: {fileID: -5698478252255323253}
   m_Layer: 0
   m_Name: Boss
   m_TagString: Untagged
@@ -100,7 +101,7 @@ MonoBehaviour:
   AttackPowerTier: 3
   MassTier: 3
   MoveSpeedTier: 3
-  MaxHP: 2200
+  MaxHP: 1000
   InvincibilityTime: 0.5
   KnockbackVectorStrength: 45
 --- !u!114 &7213434870061837242
@@ -119,6 +120,7 @@ MonoBehaviour:
   FallDeathDespawnDelay: 3
   HitSound: {fileID: 8300000, guid: 4322f517e2fe6a94fbce5f148f83d6a3, type: 3}
   DeathSound: {fileID: 8300000, guid: 61d902bc0de063644895b26bb8f497f6, type: 3}
+  deathGhostAlpha: 0.8
 --- !u!114 &4973937201088834290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -213,6 +215,8 @@ MonoBehaviour:
   - {fileID: 4847435105812019327, guid: dae6a91b2932daa4aa12ef5e9d1009a1, type: 3}
   - {fileID: 3828963586165506515, guid: c308dfc8e244c4d4fb00a698e9d9ddd1, type: 3}
   _summonSpawnRadius: 4
+  _demonCastleGatePoint: {fileID: 0}
+  _gateSpawnRadius: 1.5
   _shockwaveSound: {fileID: 8300000, guid: 68e3eb5af7b378c429c5337990926065, type: 3}
   _telegraphWarningSound: {fileID: 8300000, guid: 6d781e949ce5cdb4fbdd23070c4f184a, type: 3}
   _telegraphDetonateSound: {fileID: 8300000, guid: 103c9df91783ec442ad7066ae7e2bdb5, type: 3}
@@ -234,6 +238,33 @@ MonoBehaviour:
   _lowColor: {r: 1, g: 0.85, b: 0.1, a: 1}
   _backgroundColor: {r: 0.08, g: 0.02, b: 0.02, a: 0.85}
   _hitShakeIntensity: 0.15
+--- !u!114 &-5698478252255323253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4179878581924667921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 245bb3dcb6f894d80aeb116ebcd7b0e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.BossMovement
+  _dashSpeed: 20
+  _minDashDistance: 6
+  _circleSpeed: 25
+  _jumpHeight: 10
+  _jumpDuration: 1.2
+  _dashWarningDuration: 1.5
+  _circleWarningDuration: 1.5
+  _jumpWarningDuration: 1
+  _areaCenter: {x: 0, y: 0, z: 0}
+  _areaSize: {x: 30, y: 30}
+  _wallMargin: 1.5
+  _contactDamage: 10
+  _contactKnockback: 5
+  _contactRadius: 1.2
+  _dashTinyKnockback: 3
 --- !u!1001 &8243273008203869513
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -90,6 +90,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1731956416349447609, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.526
+      objectReference: {fileID: 0}
     - target: {fileID: 1755243942763998483, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       propertyPath: m_Name
       value: "\u30B5\u30E1 Variant"
@@ -105,6 +109,18 @@ PrefabInstance:
     - target: {fileID: 4140628017493023966, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       propertyPath: AttackPowerTier
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4329506515347436554, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4329506515347436554, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4329506515347436554, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4329506515347436554, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       propertyPath: m_LocalPosition.x

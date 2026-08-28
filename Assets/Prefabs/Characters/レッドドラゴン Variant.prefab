@@ -106,9 +106,25 @@ PrefabInstance:
       propertyPath: AttackPowerTier
       value: 4
       objectReference: {fileID: 0}
+    - target: {fileID: 2290821434628496424, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.76
+      objectReference: {fileID: 0}
     - target: {fileID: 4355757020184974044, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
       propertyPath: m_Name
       value: "\u30EC\u30C3\u30C9\u30C9\u30E9\u30B4\u30F3 Variant"
+      objectReference: {fileID: 0}
+    - target: {fileID: 5455191896537506386, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5455191896537506386, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5455191896537506386, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5455191896537506386, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
       propertyPath: m_LocalPosition.x

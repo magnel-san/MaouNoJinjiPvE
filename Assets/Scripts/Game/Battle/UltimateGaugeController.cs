@@ -82,6 +82,12 @@ namespace Game
             GaugeFraction = 0f;
             boostedCharacters.Clear();
 
+            // ★ここに追加します！（78行目付近）
+            if (UltimateCutinManager.Instance != null)
+            {
+                UltimateCutinManager.Instance.PlayUltimateCutin();
+            }
+            
             foreach (var identity in CharacterRegistry.All.ToList())
             {
                 if (identity == null || identity.Team != Team.Player || !identity.IsAlive) continue;

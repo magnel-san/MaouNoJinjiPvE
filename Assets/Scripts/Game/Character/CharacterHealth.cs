@@ -9,7 +9,6 @@ namespace Game
         public event Action<float, float> OnHPChanged;
         public event Action OnDied;
 
-        // Aタイプ(直進型)の軽減率などが書き込む。既定0。
         [HideInInspector] public float DamageReductionPercent = 0f;
 
         [Tooltip("落下死のY座標に到達後、この秒数その場に留まると消滅する")]
@@ -20,6 +19,11 @@ namespace Game
         public AudioClip HitSound;
         [Tooltip("撃破された瞬間に鳴らす効果音")]
         public AudioClip DeathSound;
+
+        [Header("死亡時ゴースト表現設定")]
+        [Tooltip("死亡した際の半透明度 (0.0 = 完全透明, 1.0 = 不透明)")]
+        [Range(0f, 1f)]
+        [SerializeField] private float deathGhostAlpha = 0.8f;
 
         public float CurrentHP { get; private set; }
         public bool IsAlive { get; private set; } = true;
@@ -71,7 +75,6 @@ namespace Game
 
         public void ApplyDamage(float rawDamage) => ApplyDamage(rawDamage, CombatFx.DefaultDamageColor);
 
-        // fxColorは被弾演出(ヒットフラッシュ・ダメージ数値・弾け)の色。攻撃種別ごとに使い分けたい場合はこちらを呼ぶ。
         public void ApplyDamage(float rawDamage, Color fxColor)
         {
             if (!IsAlive || rawDamage <= 0f) return;
@@ -96,7 +99,6 @@ namespace Game
             OnHPChanged?.Invoke(CurrentHP, stats.MaxHP);
         }
 
-        // 軽減率を無視して即死させる (落下死など)。
         public void Kill()
         {
             if (!IsAlive) return;
@@ -121,22 +123,69 @@ namespace Game
                 }
             }
 
-            // isKinematicなRigidbody(ボス等)に速度を設定しようとするとUnityが警告を出すため、
-            // 物理で動いている(=isKinematicでない)場合のみ止める。
             if (rb != null && !rb.isKinematic)
             {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
 
-            // Ghost配下にAnimatorがあれば、そのポーズのままアニメーションを止める。
             var animator = GetComponentInChildren<Animator>();
             if (animator != null) animator.speed = 0f;
+
+            // コライダーを非有効化して、死体に判定が残らない（引っかからない）ようにする
+            if (TryGetComponent<Collider>(out var col))
+            {
+                col.enabled = false;
+            }
 
             CombatFx.DeathBurst(transform.position + Vector3.up * 0.5f, CombatFx.DefaultDamageColor);
             SfxUtil.PlayAt(DeathSound, transform.position);
 
+            // --- 追記：死亡時の半透明表現 ---
+            ApplyGhostAlpha(deathGhostAlpha);
+
+                // ★ 追記：死亡カットイン演出の再生呼び出し
+                if (DeathCutinManager.Instance != null)
+                {
+                    DeathCutinManager.Instance.PlayDeathCutin();
+                }
+
             OnDied?.Invoke();
+        }
+
+        // 見た目を半透明にする処理
+        private void ApplyGhostAlpha(float alpha)
+        {
+            var renderers = GetComponentsInChildren<Renderer>();
+            foreach (var rend in renderers)
+            {
+                foreach (var mat in rend.materials)
+                {
+                    // URP/HDRPやStandardシェーダーで透明度変更を有効化する設定
+                    if (mat.HasProperty("_Color"))
+                    {
+                        Color c = mat.color;
+                        c.a = alpha;
+                        mat.color = c;
+                    }
+                    else if (mat.HasProperty("_BaseColor")) // URPシェーダー等の場合
+                    {
+                        Color c = mat.GetColor("_BaseColor");
+                        c.a = alpha;
+                        mat.SetColor("_BaseColor", c);
+                    }
+
+                    // シェーダーのレンダーモードをTransparent(半透明)に切り替える（Standardシェーダー用補正）
+                    mat.SetFloat("_Mode", 3f);
+                    mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    mat.SetInt("_ZWrite", 0);
+                    mat.DisableKeyword("_ALPHATEST_ON");
+                    mat.EnableKeyword("_ALPHABLEND_ON");
+                    mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                    mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                }
+            }
         }
     }
 }
