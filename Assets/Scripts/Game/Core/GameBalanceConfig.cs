@@ -81,11 +81,13 @@ namespace Game
         public float BossFullCoverWarningSeconds = 1.8f;
         public float BossFullCoverDamage = 22f;
 
-        [Header("防御(グー)の効果音")]
+        [Header("防御(グー)の効果音・見た目")]
         [Tooltip("グー(防御)を構え始めた瞬間に鳴らす、盾を装備する効果音。ここに設定するとゲーム全体で使われる")]
         public AudioClip GuardEquipSound;
         [Tooltip("ボス2の全体攻撃をグーで防御し切った(0ダメージにできた)瞬間に鳴らす、はじく効果音")]
         public AudioClip GuardBlockSound;
+        [Tooltip("防御中にキャラの周りを3つ公転する盾のプレファブ。未設定なら簡易的な球体を代わりに使う")]
+        public GameObject GuardShieldPrefab;
 
         [Header("ボス専用技3: ボス中心から円状の予告攻撃 (ラウンド3以降で解禁)")]
         public float BossCenterRingCooldown = 13f;

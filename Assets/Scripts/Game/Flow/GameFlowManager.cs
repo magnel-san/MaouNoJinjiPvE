@@ -140,6 +140,7 @@ namespace Game.Flow
       // 取りこぼしてしまうため)。
       ScoreBorderUI.EnsureExists();
       ScoreUI.EnsureExists();
+      CoinCountUI.EnsureExists();
       ComboUI.EnsureExists();
       BossWarningUI.EnsureExists();
 
@@ -385,7 +386,7 @@ namespace Game.Flow
 
         // プールが尽きかけている場合は、残っている分だけ表示する(候補が枚数より少なくても選択自体は続けられるようにする)。
         var showCount = Mathf.Min(_recruitOptionsPerRound, available.Count);
-        var shown = PickRandom(available, showCount);
+        var shown = PickRandomDistinctAttackMethods(available, showCount);
         var sprites = shown.Select(o => o.ResumeSprite).ToArray();
 
         var selectedIndex = -1;
@@ -481,6 +482,9 @@ namespace Game.Flow
 
       var bossController = instance.GetComponent<BossController>();
       if (bossController != null) bossController.SetDifficultyRound(round);
+
+      // 撃破時の回転縮小+コインばらまき演出(最終決戦の勇者と同じ演出)。
+      if (instance.GetComponent<BossDeathReaction>() == null) instance.AddComponent<BossDeathReaction>();
     }
 
     private static float GetBossRoundMultiplier(int round)
@@ -579,17 +583,70 @@ namespace Game.Flow
       root.SetActive(false);
     }
 
-    private static List<T> PickRandom<T>(List<T> source, int count)
+    // キャラの「攻撃方法」を判定するためのアビリティ一覧(各Abilityスクリプト先頭のA〜Iタイプ分け参照)。
+    // 見た目が違っても同じアビリティの組み合わせを持つキャラは同じ攻撃方法とみなす。
+    private static readonly System.Type[] AttackMethodAbilityTypes =
     {
-      var pool = new List<T>(source);
-      var picked = new List<T>();
+      typeof(RushAttackAbility),     // A: 直進型
+      typeof(FlyingBomberAbility),   // B: 浮遊
+      typeof(StealthKiteAbility),    // C: 隠密
+      typeof(FleeAbility),           // D: 逃げる
+      typeof(MagicNovaAbility),      // E: 魔法
+      typeof(FireworkAbility),       // F: 花火
+      typeof(SpinningSwordsAbility), // G: 剣召喚
+      typeof(SupportHealAbility),    // H: 支援
+      typeof(ChainLightningAbility), // I: 連鎖雷撃
+    };
+
+    // 判定できるアビリティを持たない場合はnullを返す(その場合、重複制限の対象外として扱う)。
+    private static string GetAttackMethodKey(CharacterRecruitOption option)
+    {
+      var prefab = option?.CharacterPrefab;
+      if (prefab == null) return null;
+
+      List<string> tags = null;
+      foreach (var abilityType in AttackMethodAbilityTypes)
+      {
+        if (prefab.GetComponent(abilityType) == null) continue;
+        tags ??= new List<string>();
+        tags.Add(abilityType.Name);
+      }
+      return tags != null ? string.Join("+", tags) : null;
+    }
+
+    // 3択に同じ攻撃方法のキャラが重複して出ないよう優先的に選ぶ。候補の種類が足りない場合のみ、
+    // 表示数を減らさないために重複を許して残りを埋める。
+    private static List<CharacterRecruitOption> PickRandomDistinctAttackMethods(List<CharacterRecruitOption> source, int count)
+    {
+      var pool = new List<CharacterRecruitOption>(source);
+      var picked = new List<CharacterRecruitOption>();
+      var usedKeys = new HashSet<string>();
       var rng = new System.Random();
+
+      while (picked.Count < count && pool.Count > 0)
+      {
+        var candidates = pool.Where(o => {
+          var key = GetAttackMethodKey(o);
+          return key == null || !usedKeys.Contains(key);
+        }).ToList();
+        if (candidates.Count == 0) break;
+
+        var chosen = candidates[rng.Next(candidates.Count)];
+        picked.Add(chosen);
+        pool.Remove(chosen);
+
+        var chosenKey = GetAttackMethodKey(chosen);
+        if (chosenKey != null) usedKeys.Add(chosenKey);
+      }
+
+      // 攻撃方法の種類が足りず埋まらなかった分は、表示数を優先して重複を許し残りから補充する。
       while (picked.Count < count && pool.Count > 0)
       {
         var index = rng.Next(pool.Count);
         picked.Add(pool[index]);
         pool.RemoveAt(index);
       }
+
       return picked;
     }
 

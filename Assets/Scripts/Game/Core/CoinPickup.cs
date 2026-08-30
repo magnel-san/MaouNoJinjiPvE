@@ -15,7 +15,9 @@ namespace Game
         const float BobFrequency = 2f;
         const float FlyToCameraSeconds = 0.4f;
         const float FallSpeed = 9f;
-        const float GroundOffset = 0.15f;
+        // 地面のコライダー形状に依存すると(見つからない/高い所に当たる等で)コインが上空に
+        // 留まってしまうことがあったため、固定の高さまで落ちるようにする。
+        const float GroundY = 1f;
         // 出現してからこの秒数は拾えないようにする(即座に消えると「落ちた」感が無いため)。
         const float PickupDelaySeconds = 1f;
         // カメラのビューポート座標(右下寄り)。コインをここへ吸い込ませることで、
@@ -53,7 +55,7 @@ namespace Game
 
         void Initialize()
         {
-            groundY = FindGroundY();
+            groundY = GroundY;
             pickupDelayRemaining = PickupDelaySeconds;
 
             var visual = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -73,16 +75,6 @@ namespace Game
             renderer.sharedMaterial = mat;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
-        }
-
-        // 出現位置の真下にあるコライダーを探し、着地する高さを求める(見つからなければY=0扱い)。
-        float FindGroundY()
-        {
-            if (Physics.Raycast(transform.position + Vector3.up * 5f, Vector3.down, out var hit, 200f))
-            {
-                return hit.point.y + GroundOffset;
-            }
-            return GroundOffset;
         }
 
         void Update()

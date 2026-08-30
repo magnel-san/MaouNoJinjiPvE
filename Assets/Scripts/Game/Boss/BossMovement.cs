@@ -58,6 +58,10 @@ namespace Game
 
         public bool IsMoving { get; private set; }
 
+        // 移動コルーチンの途中でボスが死亡した場合、そのまま移動を続けると死亡演出(回転縮小)と
+        // 移動が同時に起きて見た目が乱れるため、各ループの継続条件でこれをチェックして安全に打ち切る。
+        bool IsDead => _identity != null && !_identity.IsAlive;
+
         void Awake()
         {
             _rb = GetComponent<Rigidbody>();
@@ -183,7 +187,7 @@ namespace Game
             _isDashKnockback = true;
 
             float traveled = 0f;
-            while (traveled < finalDistance && finalDistance > 0.01f)
+            while (!IsDead && traveled < finalDistance && finalDistance > 0.01f)
             {
                 float step = _dashSpeed * Time.deltaTime;
                 Vector3 nextPos = Vector3.MoveTowards(transform.position, finalDestination, step);
@@ -229,7 +233,7 @@ namespace Game
 
             // 1. 円周上の入口地点まで移動
             _isCircleKnockback = true;
-            while (Vector3.Distance(transform.position, entryPoint) > 0.2f)
+            while (!IsDead && Vector3.Distance(transform.position, entryPoint) > 0.2f)
             {
                 Vector3 moveDir = (entryPoint - transform.position).normalized;
                 if (moveDir != Vector3.zero) transform.forward = moveDir;
@@ -243,7 +247,7 @@ namespace Game
             float currentAngle = closestAngle;
             float totalTraveledAngle = 0f;
 
-            while (totalTraveledAngle < Mathf.PI * 2f)
+            while (!IsDead && totalTraveledAngle < Mathf.PI * 2f)
             {
                 // 実速度 (_circleSpeed) に直接比例して角度を進める計算
                 float deltaAngle = (_circleSpeed / Mathf.Max(radius, 0.1f)) * Time.deltaTime;
@@ -297,7 +301,7 @@ namespace Game
 
             // 3. 待機が終わったら大ジャンプ開始
             float elapsed = 0f;
-            while (elapsed < _jumpDuration)
+            while (!IsDead && elapsed < _jumpDuration)
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / _jumpDuration;
@@ -317,7 +321,8 @@ namespace Game
             transform.position = targetPos;
             IsMoving = false;
 
-            onLandingCallback?.Invoke();
+            // 着地前(空中)に死亡した場合、死んだボスが着地攻撃(衝撃波)を出してしまわないようにする。
+            if (!IsDead) onLandingCallback?.Invoke();
         }
 
         // ボスが円形アリーナの外へ出ないよう、中心からの距離を半径以内へクランプする

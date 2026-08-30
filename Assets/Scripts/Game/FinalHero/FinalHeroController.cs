@@ -81,6 +81,9 @@ namespace Game
             lastKnownHp = current;
         }
 
+        // 敵の落とすコインは全体的に倍化する方針のため、1段階につき2枚落とす。
+        const int CoinsPerHpStep = 2;
+
         void TryDropCoinsForHpChange(float current, float max)
         {
             if (max <= 0f) return;
@@ -93,7 +96,11 @@ namespace Game
             while (fraction <= lastCoinDropHpFraction - step)
             {
                 lastCoinDropHpFraction -= step;
-                CoinPickup.Spawn(transform.position);
+                for (var i = 0; i < CoinsPerHpStep; i++)
+                {
+                    var offset = Random.insideUnitCircle * 0.5f;
+                    CoinPickup.Spawn(transform.position + new Vector3(offset.x, 0f, offset.y));
+                }
             }
         }
 

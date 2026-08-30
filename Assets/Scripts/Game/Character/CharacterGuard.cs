@@ -32,18 +32,31 @@ namespace Game
             var count = Mathf.Max(1, _shieldCount);
             shields = new Transform[count];
 
+            // GameBalanceConfig.GuardShieldPrefabが設定されていればそれを使い、未設定なら
+            // 従来通り簡易的な球体を代わりに使う。
+            var prefab = GameBalanceConfig.Instance != null ? GameBalanceConfig.Instance.GuardShieldPrefab : null;
+
             for (var i = 0; i < count; i++)
             {
-                var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                go.name = "GuardShield";
-                Destroy(go.GetComponent<Collider>());
+                GameObject go;
+                if (prefab != null)
+                {
+                    go = Instantiate(prefab);
+                    go.name = "GuardShield";
+                }
+                else
+                {
+                    go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    go.name = "GuardShield";
+                    Destroy(go.GetComponent<Collider>());
 
-                go.transform.localScale = Vector3.one * _shieldSize;
+                    go.transform.localScale = Vector3.one * _shieldSize;
 
-                var renderer = go.GetComponent<Renderer>();
-                renderer.sharedMaterial = new Material(VfxShaderUtil.GetTransparentShader()) { color = ShieldColor };
-                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                renderer.receiveShadows = false;
+                    var renderer = go.GetComponent<Renderer>();
+                    renderer.sharedMaterial = new Material(VfxShaderUtil.GetTransparentShader()) { color = ShieldColor };
+                    renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    renderer.receiveShadows = false;
+                }
 
                 go.SetActive(false);
                 shields[i] = go.transform;

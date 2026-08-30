@@ -76,16 +76,11 @@ namespace Game
             if (_animator == null) _animator = GetComponentInChildren<Animator>();
         }
 
-        [Header("撃破時のコインばらまき")]
-        [SerializeField] private int _deathCoinCount = 24;
-        [SerializeField] private float _deathCoinScatterRadius = 3.5f;
-
         void OnEnable()
         {
             if (health != null)
             {
                 health.OnHPChanged += HandleHpChanged;
-                health.OnDied += HandleDied;
             }
         }
 
@@ -94,19 +89,10 @@ namespace Game
             if (health != null)
             {
                 health.OnHPChanged -= HandleHpChanged;
-                health.OnDied -= HandleDied;
             }
         }
 
-        // ボス撃破時、大量のコインを周囲へばらまく。
-        void HandleDied()
-        {
-            for (var i = 0; i < _deathCoinCount; i++)
-            {
-                var offset = Random.insideUnitCircle * _deathCoinScatterRadius;
-                CoinPickup.Spawn(transform.position + new Vector3(offset.x, 0f, offset.y));
-            }
-        }
+        // 撃破時の回転縮小+コインばらまき演出はBossDeathReaction(GameFlowManagerが動的付与)が担当する。
 
         void Start()
         {
@@ -147,6 +133,9 @@ namespace Game
             lastKnownHp = current;
         }
 
+        // 敵の落とすコインは全体的に倍化する方針のため、1段階につき2枚落とす。
+        const int CoinsPerHpStep = 2;
+
         void TryDropCoinsForHpChange(float current, float max)
         {
             if (max <= 0f) return;
@@ -159,7 +148,11 @@ namespace Game
             while (fraction <= lastCoinDropHpFraction - step)
             {
                 lastCoinDropHpFraction -= step;
-                CoinPickup.Spawn(transform.position);
+                for (var i = 0; i < CoinsPerHpStep; i++)
+                {
+                    var offset = Random.insideUnitCircle * 0.5f;
+                    CoinPickup.Spawn(transform.position + new Vector3(offset.x, 0f, offset.y));
+                }
             }
         }
 
@@ -182,8 +175,18 @@ namespace Game
                 patternTimer -= Time.deltaTime;
                 if (patternTimer <= 0f)
                 {
-                    patternTimer = 5f; // 次の行動までの間隔
-                    StartCoroutine(ExecuteRandomMovementPattern(cfg));
+                    // Spawn/専用技/吹き飛ばしの単発ポーズ再生中に移動パターンを開始すると、
+                    // 実際には移動しているのにポーズが硬直したまま(見た目が動いていない)ように
+                    // 見えるバグになるため、再生が終わるまでわずかに遅らせて再判定する。
+                    if (!IsPlayingOneShotPose())
+                    {
+                        patternTimer = 5f; // 次の行動までの間隔
+                        StartCoroutine(ExecuteRandomMovementPattern(cfg));
+                    }
+                    else
+                    {
+                        patternTimer = 0.2f;
+                    }
                 }
             }
 
@@ -352,9 +355,20 @@ namespace Game
             ScoreBorderUI.FlashRed(warning + 0.3f);
         }
 
+        // 移動パターン(突進/円運動/ジャンプ)の実行中に専用技ポーズで上書きすると、実際には移動して
+        // いるのに攻撃ポーズで静止して見える(硬直したまま移動する)バグになるため、移動中は再生しない
+        // (予告・ダメージ自体は移動中でも通常通り発生する。演出のみを抑制する)。
         void TriggerSpecialAttackAnim()
         {
-            if (_animator != null) _animator.SetTrigger(AnimSpecialAttack);
+            if (_animator != null && !movement.IsMoving) _animator.SetTrigger(AnimSpecialAttack);
+        }
+
+        // Spawn/SpecialAttack/Knockbackのいずれかの単発ポーズを現在再生中かどうか。
+        bool IsPlayingOneShotPose()
+        {
+            if (_animator == null) return false;
+            var s = _animator.GetCurrentAnimatorStateInfo(0);
+            return (s.IsName(AnimSpawn) || s.IsName(AnimSpecialAttack) || s.IsName(AnimKnockback)) && s.normalizedTime < 1f;
         }
 
         // 専用技1〜3が互いに重ならないよう、発動〜着弾までの間_specialAttackActiveを立てる。
@@ -462,9 +476,10 @@ namespace Game
             }
         }
 
+        // TriggerSpecialAttackAnimと同じ理由で、移動中は吹き飛ばしポーズを再生しない。
         void TriggerKnockbackAnim()
         {
-            if (_animator != null) _animator.SetTrigger(AnimKnockback);
+            if (_animator != null && !movement.IsMoving) _animator.SetTrigger(AnimKnockback);
         }
 
         bool TryDoSummon(GameBalanceConfig cfg)
