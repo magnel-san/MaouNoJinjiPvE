@@ -191,6 +191,33 @@ namespace Game.HandTracking
       _taskApi = HandLandmarker.CreateFromOptions(options, GpuManager.GpuResources);
 
       var imageSource = ImageSourceProvider.ImageSource;
+
+      if (imageSource is WebCamSource webCamSource)
+      {
+          var devices = webCamSource.sourceCandidateNames;
+          if (devices != null && devices.Length > 0)
+          {
+              int targetIndex = 0;
+
+              for (int i = 0; i < devices.Length; i++)
+              {
+                  Debug.Log($"[MediaPipe] 検出されたカメラ [{i}]: {devices[i]}");
+
+                  // eMeet、C960、または FaceTime 以外のカメラを優先指定
+                  if (devices[i].Contains("eMeet") || devices[i].Contains("C960") || !devices[i].Contains("FaceTime"))
+                  {
+                      targetIndex = i;
+                      Debug.Log($"[MediaPipe] 外付けカメラを選択しました: {devices[i]} (Index: {i})");
+                      break;
+                  }
+              }
+
+              // ソースの切り替え実行
+              webCamSource.SelectSource(targetIndex);
+          }
+      }
+
+      // 選択を確定させた上で再生を開始
       yield return imageSource.Play();
 
       if (!imageSource.isPrepared)
