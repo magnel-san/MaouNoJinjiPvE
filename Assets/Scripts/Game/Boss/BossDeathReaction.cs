@@ -24,7 +24,24 @@ namespace Game
         void OnEnable() => health.OnDied += HandleDied;
         void OnDisable() => health.OnDied -= HandleDied;
 
-        void HandleDied() => StartCoroutine(CoDeathSequence());
+        void HandleDied()
+        {
+            KillAllMinions();
+            StartCoroutine(CoDeathSequence());
+        }
+
+        // ボスが倒れたら、まだ生き残っている子分(召喚された雑魚)も道連れで全滅させる。
+        // ボス自身はこの時点で既にIsAlive=falseになっているため、!c.IsAliveの判定だけで自然に除外される。
+        // 各キャラのCharacterHealth.Kill()を通すため、コインドロップ等の通常の死亡演出もそのまま発生する。
+        void KillAllMinions()
+        {
+            foreach (var c in CharacterRegistry.All)
+            {
+                if (c == null || c.Team != Team.Enemy || c.IsBoss || !c.IsAlive) continue;
+                var minionHealth = c.GetComponent<CharacterHealth>();
+                if (minionHealth != null) minionHealth.Kill();
+            }
+        }
 
         IEnumerator CoDeathSequence()
         {
@@ -73,7 +90,11 @@ namespace Game
                 yield return null;
             }
 
-            gameObject.SetActive(false);
+            // SetActive(false)だけだとCharacterIdentity.OnDisableがCharacterRegistryから自身を
+            // 登録解除してしまい、GameFlowManager.DespawnAllEnemiesの「生存中の敵を破棄する」ループが
+            // このボスを見つけられず永遠にDestroyされない(次ラウンド以降、頭上のHPバー等が
+            // 残り続ける原因になっていた)。ここで直接Destroyして確実に片付ける。
+            Destroy(gameObject);
 
             // WINの結果画面が出る前に、カメラを演出開始前の位置・向きへ即座にリセットする。
             // (最終決戦と違い、この後も次のラウンドが続くため、ここで操作しやすい状態に戻しておく)

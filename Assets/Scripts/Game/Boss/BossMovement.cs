@@ -375,6 +375,14 @@ namespace Game
             return new Vector3(_areaCenter.x + result.x, destination.y, _areaCenter.z + result.z);
         }
 
+        // 同じ相手への連続ヒットを防ぐ無敵時間管理(CharacterCombat.csと同じ方針: ダメージは
+        // 対象のInvincibilityTimeで、吹き飛ばしはそれより短い専用間隔でそれぞれ独立にレート制限する)。
+        // これが無いと、突進/円運動で接触したまま毎物理ステップ(OverlapSphereが検知するたび)に
+        // ダメージ・効果音が積み重なってしまう。
+        private readonly Dictionary<CharacterIdentity, float> _lastContactDamageTime = new Dictionary<CharacterIdentity, float>();
+        private readonly Dictionary<CharacterIdentity, float> _lastContactKnockbackTime = new Dictionary<CharacterIdentity, float>();
+        private const float ContactKnockbackInterval = 0.25f;
+
         private void CheckContactKnockback(float force)
         {
             var hits = Physics.OverlapSphere(transform.position, _contactRadius);
@@ -387,8 +395,22 @@ namespace Game
                 var health = targetIdentity.GetComponent<CharacterHealth>();
                 if (health != null && health.IsAlive)
                 {
-                    health.ApplyDamage(_contactDamage, Color.red, _identity);
+                    var targetStats = targetIdentity.GetComponent<CharacterStats>();
+                    var invincibilityTime = targetStats != null ? targetStats.InvincibilityTime : 0.5f;
+                    var canDamage = !_lastContactDamageTime.TryGetValue(targetIdentity, out var lastDamageTime)
+                        || Time.time - lastDamageTime >= invincibilityTime;
+
+                    if (canDamage)
+                    {
+                        _lastContactDamageTime[targetIdentity] = Time.time;
+                        health.ApplyDamage(_contactDamage, Color.red, _identity);
+                    }
                 }
+
+                var canKnockback = !_lastContactKnockbackTime.TryGetValue(targetIdentity, out var lastKnockbackTime)
+                    || Time.time - lastKnockbackTime >= ContactKnockbackInterval;
+                if (!canKnockback) continue;
+                _lastContactKnockbackTime[targetIdentity] = Time.time;
 
                 var rb = targetIdentity.GetComponent<Rigidbody>();
                 if (rb != null)

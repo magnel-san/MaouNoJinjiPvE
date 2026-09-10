@@ -26,6 +26,7 @@ namespace Game
         Image fillImage;
         Image flashImage;
         Text nameText;
+        Text percentText;
         float flashTimer;
 
         // 動的にAddComponentする場合(最終決戦の勇者等)、Inspectorで設定できない名前をここで上書きする。
@@ -52,6 +53,10 @@ namespace Game
         void BuildUi()
         {
             var canvasGO = new GameObject("BossHpCanvas");
+            // ボス本体の子にしておく(ScreenSpaceOverlayなので見た目上の位置・回転・縮小には影響されない)。
+            // 死亡演出でボスがSetActive(false)/Destroyされた際に、このキャンバスだけ取り残されて
+            // 次のボスのHPバーと重複表示されるのを防ぐため。
+            canvasGO.transform.SetParent(transform, false);
             canvas = canvasGO.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 200;
@@ -111,6 +116,21 @@ namespace Game
             flashImage = flashRect.gameObject.AddComponent<Image>();
             flashImage.color = new Color(1f, 1f, 1f, 0f);
             flashImage.raycastTarget = false;
+
+            var pctRect = NewChildRect("Percent", fillAreaRect, Vector2.zero, Vector2.one, Vector2.zero);
+            pctRect.offsetMin = new Vector2(6f, 0f);
+            pctRect.offsetMax = new Vector2(-6f, 0f);
+            percentText = pctRect.gameObject.AddComponent<Text>();
+            percentText.font = VfxShaderUtil.GetDefaultFont();
+            percentText.fontSize = 20;
+            percentText.fontStyle = FontStyle.Bold;
+            percentText.alignment = TextAnchor.MiddleRight;
+            percentText.color = Color.white;
+            percentText.text = "100%";
+            percentText.raycastTarget = false;
+            var pctOutline = pctRect.gameObject.AddComponent<Outline>();
+            pctOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+            pctOutline.effectDistance = new Vector2(1.5f, -1.5f);
         }
 
         static RectTransform NewChildRect(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot)
@@ -128,6 +148,7 @@ namespace Game
             var pct = max > 0f ? Mathf.Clamp01(current / max) : 0f;
             fillImage.fillAmount = pct;
             fillImage.color = Color.Lerp(_lowColor, _fullColor, pct);
+            percentText.text = $"{Mathf.RoundToInt(pct * 100f)}%";
 
             flashTimer = FlashDuration;
             CameraShake.Shake(_hitShakeIntensity);

@@ -42,8 +42,13 @@ namespace Game
         static string DisplayNameOf(CharacterIdentity identity)
         {
             const string cloneSuffix = "(Clone)";
+            const string variantSuffix = "Variant";
+
             var name = identity.gameObject.name;
-            return name.EndsWith(cloneSuffix) ? name.Substring(0, name.Length - cloneSuffix.Length).TrimEnd() : name;
+            if (name.EndsWith(cloneSuffix)) name = name.Substring(0, name.Length - cloneSuffix.Length).TrimEnd();
+            if (name.EndsWith(variantSuffix)) name = name.Substring(0, name.Length - variantSuffix.Length).TrimEnd();
+
+            return name;
         }
     }
 }

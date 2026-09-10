@@ -12,13 +12,14 @@ namespace Game
     // 本来別の色だったパーツまで塗り替えてしまう(=「一部だけ違う色になる」現象の原因になる)。
     // また色プロパティ名はURP系マテリアルなら_BaseColor、Standard/レガシー系なら_Colorのことが多いため
     // 両対応し、どちらも持たないマテリアルには一切触れない(誤って白色などに固定してしまわないため)。
+    // 全キャラ共通の見た目のため、プレファブごとにInspectorで調整する想定はない(整理のため非表示)。
     [RequireComponent(typeof(CharacterIdentity))]
     public class EnemyHighlight : MonoBehaviour
     {
-        public Transform GhostVisualRoot;
-        public Color HighlightColor = new Color(1f, 0.25f, 0.25f);
-        [Range(0f, 1f)] public float TintStrength = 0.65f;
-        [Range(0f, 5f)] public float EmissionIntensity = 1.5f;
+        [HideInInspector] public Transform GhostVisualRoot;
+        [HideInInspector] public Color HighlightColor = new Color(1f, 0.25f, 0.25f);
+        [HideInInspector] public float TintStrength = 0.65f;
+        [HideInInspector] public float EmissionIntensity = 1.5f;
 
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");

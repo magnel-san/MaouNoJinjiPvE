@@ -91,8 +91,16 @@ PrefabInstance:
       value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 1922687462463964542, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+      propertyPath: Rank
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1922687462463964542, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
       propertyPath: MaxHP
       value: 655.9035
+      objectReference: {fileID: 0}
+    - target: {fileID: 1922687462463964542, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+      propertyPath: HPTier
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 1922687462463964542, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
       propertyPath: MassTier
@@ -104,7 +112,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1922687462463964542, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
       propertyPath: AttackPowerTier
-      value: 4
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 2290821434628496424, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
       propertyPath: m_LocalPosition.y
@@ -169,13 +177,60 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 327083583845644624, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
     - {fileID: 8247525421733527870, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+    - {fileID: 54631014676943984, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+    - {fileID: 5066874367379592864, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 2290821434628496424, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 449272773970408627}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4355757020184974044, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6642468065231490549}
+    - targetCorrespondingSourceObject: {fileID: 4355757020184974044, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 388400302943428103}
   m_SourcePrefab: {fileID: 100100000, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+--- !u!1 &5261370362105355867 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4355757020184974044, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}
+  m_PrefabInstance: {fileID: 8464204996945431687}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6642468065231490549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5261370362105355867}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 789d05db94560944a9b044695fde42ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.FlyMovementAbility
+  TargetHeight: 6
+  LiftSpringStrength: 20
+  LiftDamping: 5
+  GroundedHeightThreshold: 0.6
+  PeriodicDescentInterval: 4
+  GroundedVulnerableDuration: 3
+  HorizontalSpeedMultiplier: 0.55
+--- !u!114 &388400302943428103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5261370362105355867}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f34ce8d9cbecee64c903d31dd2d6aee7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.DragonBreathSkill
+  Tier: 3
+  BreathWidth: 3
+  BreathSound: {fileID: 0}
 --- !u!4 &7691097496099295407 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2290821434628496424, guid: e7df6955562edeb47862d93b63bbab8b, type: 3}

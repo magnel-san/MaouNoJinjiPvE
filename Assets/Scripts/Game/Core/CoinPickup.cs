@@ -61,7 +61,8 @@ namespace Game
             var visual = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             visual.name = "CoinVisual";
             visual.transform.SetParent(transform, false);
-            visual.transform.localScale = new Vector3(0.35f, 0.04f, 0.35f);
+            // 「地面の色と紛れて気づかない/小さい」という指摘に対応し、以前よりはっきり大きくしてある。
+            visual.transform.localScale = new Vector3(0.55f, 0.06f, 0.55f);
             visual.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
             Destroy(visual.GetComponent<Collider>());
 
@@ -70,7 +71,7 @@ namespace Game
             if (mat.HasProperty("_EmissionColor"))
             {
                 mat.EnableKeyword("_EMISSION");
-                mat.SetColor("_EmissionColor", CoinColor * 1.5f);
+                mat.SetColor("_EmissionColor", CoinColor * 2.2f);
             }
             renderer.sharedMaterial = mat;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

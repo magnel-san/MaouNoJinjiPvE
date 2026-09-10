@@ -143,12 +143,20 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2225240618667892012, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
+      propertyPath: Rank
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2225240618667892012, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
       propertyPath: MaxHP
       value: 603.3418
       objectReference: {fileID: 0}
     - target: {fileID: 2225240618667892012, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
+      propertyPath: HPTier
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2225240618667892012, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
       propertyPath: MassTier
-      value: 5
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 2225240618667892012, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
       propertyPath: MoveSpeedTier
@@ -156,7 +164,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2225240618667892012, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
       propertyPath: AttackPowerTier
-      value: 5
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 6202500234739458321, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
       propertyPath: m_Name
@@ -165,13 +173,70 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 6894947396350295319, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
     - {fileID: 883357941458722324, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
+    - {fileID: 2009313851184615319, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
+    - {fileID: 659291969094878880, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 3454309251464774824, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2738814294650461317}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6202500234739458321, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8522355207119126132}
+    - targetCorrespondingSourceObject: {fileID: 6202500234739458321, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6727503743005735414}
+    - targetCorrespondingSourceObject: {fileID: 6202500234739458321, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8924714069374905103}
   m_SourcePrefab: {fileID: 100100000, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
+--- !u!1 &2057450381612725719 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6202500234739458321, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}
+  m_PrefabInstance: {fileID: 5376802218310145222}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8522355207119126132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2057450381612725719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: feb5a2966afcd0e4b9a29dad5f65b0dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.ApproachMovementAbility
+--- !u!114 &6727503743005735414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2057450381612725719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f9a853e62d48e4459a0c9f8de09ef47, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.GuardAuraSkill
+  AuraReductionTier: 3
+--- !u!114 &8924714069374905103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2057450381612725719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 109b4984b7aacbb4cb57395786196de5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.HealSkill
+  HealRange: 5
+  HealCooldownTier: 1
+  HealAmountTier: 1
+  HealSound: {fileID: 0}
 --- !u!4 &7308804358681907310 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3454309251464774824, guid: 2d6be51cc798827448371ac1f9293b3a, type: 3}

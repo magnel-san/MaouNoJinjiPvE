@@ -15,6 +15,8 @@ namespace Game
         public static readonly Color DodgeColor = new Color(0.4f, 0.9f, 1f);
         public static readonly Color OuchColor = new Color(1f, 0.25f, 0.2f);
         public static readonly Color GuardColor = new Color(0.5f, 0.8f, 1f);
+        public static readonly Color HealPopupColor = new Color(0.4f, 1f, 0.5f);
+        public static readonly Color ReflectPopupColor = new Color(0.9f, 0.4f, 1f);
 
         public static void HitFlash(Transform target, Color color, float duration = 0.15f)
         {
@@ -38,6 +40,18 @@ namespace Game
         // グー防御でダメージを完全無効化できた時に、OUCHの代わりに表示するテキスト。
         public static void GuardPopup(Vector3 worldPos) =>
             DamagePopupEffect.Spawn(worldPos + Vector3.up * 1.8f, "GUARD", GuardColor, 2f);
+
+        // HealSkill(回復エリア)等が範囲内の味方を回復した瞬間に、いくら回復したかを表示する。
+        public static void HealPopup(Vector3 worldPos, float amount)
+        {
+            if (amount <= 0f) return;
+            DamagePopupEffect.Spawn(worldPos + Vector3.up * 1.6f, "+" + Mathf.CeilToInt(amount), HealPopupColor, 1f);
+        }
+
+        // ReflectFieldSkill(反射フィールド)が被弾に反応して発動した瞬間、術者の頭上に
+        // 「何が起きたか」を文字で明示する(見た目だけの波では発動理由が伝わりにくいため)。
+        public static void ReflectPopup(Vector3 worldPos) =>
+            DamagePopupEffect.Spawn(worldPos + Vector3.up * 1.8f, "反射!", ReflectPopupColor, 1.6f);
 
         public static void ImpactBurst(Vector3 worldPos, Color color, float size = 0.25f)
         {

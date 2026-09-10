@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Game
 {
-    // SupportHealAbilityの回復演出。支援役から対象へ向けて一瞬だけ光の筋を表示して消える
+    // HealSkillの回復演出。支援役から対象へ向けて一瞬だけ光の筋を表示して消える
     // (LightningBoltEffectと同じ「2点間を結ぶ短命ビーム」の構造だが、直線かつ色が違うだけの
     // シンプルな見た目にしている)。
     public class HealBeamEffect : MonoBehaviour

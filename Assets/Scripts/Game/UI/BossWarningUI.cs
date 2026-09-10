@@ -50,7 +50,9 @@ namespace Game
             var canvas = canvasGo.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 400;
-            canvasGo.AddComponent<CanvasScaler>();
+            var scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
 
             var bgGo = new GameObject("FlashBg", typeof(RectTransform));
             bgGo.transform.SetParent(canvasGo.transform, false);
@@ -66,8 +68,9 @@ namespace Game
             introText = BuildText(canvasGo.transform, "IntroText", 110, new Vector2(0.5f, 0.5f), new Vector2(1600f, 220f), Color.white);
             introText.canvasRenderer.SetAlpha(0f);
 
-            var instructionTextObj = BuildText(canvasGo.transform, "InstructionText", 52, new Vector2(0.5f, 0.65f),
-                new Vector2(1400f, 120f), new Color(1f, 0.9f, 0.3f));
+            // 長い指示文(最終決戦の指示等)でもはみ出さないよう、横幅に余裕を持たせてある。
+            var instructionTextObj = BuildText(canvasGo.transform, "InstructionText", 48, new Vector2(0.5f, 0.65f),
+                new Vector2(1800f, 120f), new Color(1f, 0.9f, 0.3f));
             instructionText = instructionTextObj;
             instructionGroup = instructionTextObj.gameObject.AddComponent<CanvasGroup>();
             instructionGroup.alpha = 0f;

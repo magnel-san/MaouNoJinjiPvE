@@ -96,6 +96,14 @@ namespace Game
                 finalDamage *= 1f - Mathf.Clamp01(GuardDamageReductionPercent / 100f);
             }
 
+            // タンク(Jタイプ)の盾オーラ範囲内なら、そのタンクの軽減率でさらにダメージを減らす
+            // (複数タンクの範囲が重なる場合は最大値を採用)。
+            var tankAuraReduction = GetTankAuraReductionPercent();
+            if (tankAuraReduction > 0f)
+            {
+                finalDamage *= 1f - Mathf.Clamp01(tankAuraReduction / 100f);
+            }
+
             CurrentHP = Mathf.Max(0f, CurrentHP - finalDamage);
             OnHPChanged?.Invoke(CurrentHP, stats.MaxHP);
 
@@ -107,6 +115,26 @@ namespace Game
             if (attacker != null) DamageStatsTracker.RegisterDamage(attacker, finalDamage);
 
             if (CurrentHP <= 0f) Die();
+        }
+
+        // 同チームの生存中の「防御フィールド」スキル(GuardAuraSkill)持ちのうち、このキャラが
+        // オーラの範囲内に入っているものの中で最大の軽減率を返す(範囲外なら0)。常駐フィールドを
+        // 持たずダメージ発生時に都度計算するため、生死・移動・オーラ範囲の変化を後始末なしで正確に反映できる。
+        float GetTankAuraReductionPercent()
+        {
+            float best = 0f;
+            foreach (var c in CharacterRegistry.All)
+            {
+                if (c == null || c.Team != identity.Team || !c.IsAlive) continue;
+                var guard = c.GetComponent<GuardAuraSkill>();
+                if (guard == null) continue;
+
+                var dist = Vector3.Distance(transform.position, c.transform.position);
+                if (dist > guard.AuraRadius) continue;
+
+                if (guard.AuraReductionPercent > best) best = guard.AuraReductionPercent;
+            }
+            return best;
         }
 
         public void Heal(float amount)

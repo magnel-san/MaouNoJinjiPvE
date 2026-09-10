@@ -43,13 +43,30 @@ namespace Game
                 foreach (var c in colliders) c.isTrigger = true;
             }
 
+            BuildTrail();
             UpdatePosition();
+        }
+
+        // 公転中の残像。剣が高速で振り回されている見た目をわかりやすくする。
+        void BuildTrail()
+        {
+            var trail = gameObject.AddComponent<TrailRenderer>();
+            trail.time = 0.18f;
+            trail.startWidth = 0.14f;
+            trail.endWidth = 0.01f;
+            trail.minVertexDistance = 0.03f;
+            trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            trail.receiveShadows = false;
+            var trailColor = new Color(0.6f, 0.85f, 1f, 0.6f);
+            trail.material = new Material(VfxShaderUtil.GetTransparentShader()) { color = trailColor };
+            trail.startColor = trailColor;
+            trail.endColor = new Color(trailColor.r, trailColor.g, trailColor.b, 0f);
         }
 
         void Update()
         {
-            // 所有者が死んでも(SpinningSwordsAbility.enabledがCharacterHealth.Die()で無効化されるだけで
-            // ownerのGameObject自体は消えないため)ownerはnullにならない。IsAliveも見て、死後は
+            // 所有者が死んでも(OrbitingSwordsSkillが無効化されるだけでownerのGameObject自体は
+            // 消えないため)ownerはnullにならない。IsAliveも見て、死後は
             // 剣が消えずに周囲を回り続け、敵を延々と攻撃し続ける事故を防ぐ。
             if (owner == null || ownerIdentity == null || !ownerIdentity.IsAlive) { Destroy(gameObject); return; }
             currentAngleDeg += orbitSpeed * Time.deltaTime;

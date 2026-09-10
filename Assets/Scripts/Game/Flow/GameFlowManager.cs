@@ -34,6 +34,9 @@ namespace Game.Flow
     [Tooltip("ボスを撃破してから次に進むまでの猶予秒数。この間キャラ・入力は有効のままなので、" +
       "落ちているコインを拾いに行ける")]
     [SerializeField] private float _bossDeathGraceSeconds = 5f;
+    [Tooltip("1ラウンドの時間制限(秒)。0以下で無制限。時間切れは敗北扱いだが、このゲームは" +
+      "勝敗に関わらず次ラウンドへ進む仕様のため、単なる足止めにはならない")]
+    [SerializeField] private float _roundTimeLimitSeconds = 90f;
 
     [Header("ボス前の練習フェーズ")]
     [Tooltip("各ラウンドのボス出現前、雑魚のみが指定秒数だけ湧く練習時間(要素数=_battleRoundCount)。" +
@@ -143,6 +146,9 @@ namespace Game.Flow
       CoinCountUI.EnsureExists();
       ComboUI.EnsureExists();
       BossWarningUI.EnsureExists();
+      PartyHpListUI.EnsureExists();
+      RoundTimerUI.EnsureExists();
+      SkillActivationLogUI.EnsureExists();
 
       // リザルト画面でEnterキーが押されたら、ここへ戻ってタイトルからやり直す。
       while (true)
@@ -168,6 +174,10 @@ namespace Game.Flow
         yield return RunRecruitmentLoop(_recruitBatchSize);
         yield return RespawnAllPlayerCharacters(_lastRecruitedCountThisRound);
 
+        // 次の採用キャラが配置され次第、ラウンド結果画面で隠していた味方HP一覧を再表示する。
+        PartyHpListUI.Show();
+        LiveDamageStatsUI.Show();
+
         yield return ShowScreenAndWait(_gameStartRoot, _gameStartButton);
 
         yield return RunPracticePhaseAsync(round);
@@ -182,6 +192,11 @@ namespace Game.Flow
 
         SetBattleInputActive(false);
         SetAllCharactersActive(false);
+
+        // RoundResultStatsUIの与ダメージパネルが画面左側で味方HP一覧と重なって見づらいため、
+        // 結果表示中は隠す(次の採用キャラ配置後にShowで戻す)。
+        PartyHpListUI.Hide();
+        LiveDamageStatsUI.Hide();
 
         yield return ShowRoundResult(_lastRoundWon);
 
@@ -320,6 +335,11 @@ namespace Game.Flow
       SetBattleInputActive(false);
       SetAllCharactersActive(false);
 
+      // ゲームクリア/リザルト画面と味方HP一覧が重ならないよう隠す(ゲームはここで終了するため、
+      // 次回はResetForNewGame後の1ラウンド目でRespawnAllPlayerCharacters時に再表示される)。
+      PartyHpListUI.Hide();
+      LiveDamageStatsUI.Hide();
+
       if (heroDefeated)
       {
         // 撃破演出(カメラフォーカス+回転+縮小+コインばらまき)が終わるまで待つ。
@@ -386,7 +406,7 @@ namespace Game.Flow
 
         // プールが尽きかけている場合は、残っている分だけ表示する(候補が枚数より少なくても選択自体は続けられるようにする)。
         var showCount = Mathf.Min(_recruitOptionsPerRound, available.Count);
-        var shown = PickRandomDistinctAttackMethods(available, showCount);
+        var shown = PickRandomRankWeightedDistinctAttackMethods(available, showCount);
         var sprites = shown.Select(o => o.ResumeSprite).ToArray();
 
         var selectedIndex = -1;
@@ -471,13 +491,14 @@ namespace Game.Flow
       var identity = instance.GetComponent<CharacterIdentity>();
       if (identity != null) identity.Team = Team.Enemy;
 
-      // MaxHPは5段階Tierに乗らない値のため、CharacterHealth.Start()より前(Instantiate直後の
-      // このタイミング)で直接書き換える。ダメージ側の倍率はBossController.SetDifficultyRoundが
-      // 攻撃発動のたびに参照するので、そちらはタイミングを気にせず設定すればよい。
+      // MaxHPはランク方式に乗らない固定値(CharacterStats.UseFixedStats)のため、
+      // CharacterHealth.Start()より前(Instantiate直後のこのタイミング)でOverrideMaxHPする。
+      // ダメージ側の倍率はBossController.SetDifficultyRoundが攻撃発動のたびに参照するので、
+      // そちらはタイミングを気にせず設定すればよい。
       var stats = instance.GetComponent<CharacterStats>();
       if (stats != null)
       {
-        stats.MaxHP *= GetBossRoundMultiplier(round);
+        stats.OverrideMaxHP(stats.MaxHP * GetBossRoundMultiplier(round));
       }
 
       var bossController = instance.GetComponent<BossController>();
@@ -545,9 +566,12 @@ namespace Game.Flow
       }
     }
 
-    // 1ラウンド分の戦闘終了を待つ。勝敗はyield break後に_lastRoundWonへ入っている。
+    // 1ラウンド分の戦闘終了を待つ。勝敗はループを抜けた後に_lastRoundWonへ入っている。
     private IEnumerator WaitForRoundEnd()
     {
+      var elapsed = 0f;
+      RoundTimerUI.Show(_roundTimeLimitSeconds);
+
       while (true)
       {
         var playerAlive = CharacterRegistry.All.Any(c => c != null && c.Team == Team.Player && c.IsAlive);
@@ -556,18 +580,27 @@ namespace Game.Flow
         if (!playerAlive)
         {
           _lastRoundWon = false;
-          yield break;
+          break;
         }
         if (!enemyAlive)
         {
           _lastRoundWon = true;
           // ボス撃破後、落ちているコインを拾いに行けるよう猶予秒数だけ待つ(キャラ・入力は有効のまま)。
           if (_bossDeathGraceSeconds > 0f) yield return new WaitForSeconds(_bossDeathGraceSeconds);
-          yield break;
+          break;
+        }
+        if (_roundTimeLimitSeconds > 0f && elapsed >= _roundTimeLimitSeconds)
+        {
+          _lastRoundWon = false;
+          break;
         }
 
         yield return new WaitForSeconds(_battleCheckInterval);
+        elapsed += _battleCheckInterval;
+        RoundTimerUI.UpdateRemaining(_roundTimeLimitSeconds - elapsed);
       }
+
+      RoundTimerUI.Hide();
     }
 
     // 勝敗に関わらず(このゲームは3回戦うため)、結果を少しだけ表示してから自動で次ラウンドへ進む。
@@ -583,19 +616,30 @@ namespace Game.Flow
       root.SetActive(false);
     }
 
-    // キャラの「攻撃方法」を判定するためのアビリティ一覧(各Abilityスクリプト先頭のA〜Iタイプ分け参照)。
-    // 見た目が違っても同じアビリティの組み合わせを持つキャラは同じ攻撃方法とみなす。
+    // キャラの「攻撃方法」を判定するためのスキル一覧。1体が複数のスキルを持てるため、
+    // 見た目が違っても同じスキルの組み合わせを持つキャラは同じ攻撃方法とみなす(移動タイプは対象外)。
     private static readonly System.Type[] AttackMethodAbilityTypes =
     {
-      typeof(RushAttackAbility),     // A: 直進型
-      typeof(FlyingBomberAbility),   // B: 浮遊
-      typeof(StealthKiteAbility),    // C: 隠密
-      typeof(FleeAbility),           // D: 逃げる
-      typeof(MagicNovaAbility),      // E: 魔法
-      typeof(FireworkAbility),       // F: 花火
-      typeof(SpinningSwordsAbility), // G: 剣召喚
-      typeof(SupportHealAbility),    // H: 支援
-      typeof(ChainLightningAbility), // I: 連鎖雷撃
+      typeof(ArrowShotSkill),
+      typeof(FireworkShotSkill),
+      typeof(ChainLightningSkill),
+      typeof(BombDropSkill),
+      typeof(NovaBlastSkill),
+      typeof(OrbitingSwordsSkill),
+      typeof(HealSkill),
+      typeof(GuardAuraSkill),
+      typeof(SelfDamageReductionSkill),
+      typeof(ReflectFieldSkill),
+      typeof(DragonBreathSkill),
+      typeof(LaserBeamSkill),
+    };
+
+    // ランク別の抽選重み(金6体20%/銀15体50%/銅9体30%)。
+    private static readonly Dictionary<CharacterRank, float> RankDrawWeight = new Dictionary<CharacterRank, float>
+    {
+      { CharacterRank.Gold, 20f },
+      { CharacterRank.Silver, 50f },
+      { CharacterRank.Bronze, 30f },
     };
 
     // 判定できるアビリティを持たない場合はnullを返す(その場合、重複制限の対象外として扱う)。
@@ -614,9 +658,23 @@ namespace Game.Flow
       return tags != null ? string.Join("+", tags) : null;
     }
 
-    // 3択に同じ攻撃方法のキャラが重複して出ないよう優先的に選ぶ。候補の種類が足りない場合のみ、
-    // 表示数を減らさないために重複を許して残りを埋める。
-    private static List<CharacterRecruitOption> PickRandomDistinctAttackMethods(List<CharacterRecruitOption> source, int count)
+    // ランク(金/銀/銅)の重みに従って候補群から1体選ぶ。
+    private static CharacterRecruitOption PickWeightedByRank(List<CharacterRecruitOption> candidates, System.Random rng)
+    {
+      var totalWeight = candidates.Sum(o => RankDrawWeight.TryGetValue(o.Rank, out var w) ? w : 1f);
+      var roll = rng.NextDouble() * totalWeight;
+      var cumulative = 0.0;
+      foreach (var o in candidates)
+      {
+        cumulative += RankDrawWeight.TryGetValue(o.Rank, out var w) ? w : 1f;
+        if (roll < cumulative) return o;
+      }
+      return candidates[candidates.Count - 1];
+    }
+
+    // 3択に同じ攻撃方法のキャラが重複して出ないよう優先的に選び、その中でランク(金/銀/銅)の
+    // 抽選重みを反映する。候補の種類が足りない場合のみ、表示数を減らさないために重複を許して残りを埋める。
+    private static List<CharacterRecruitOption> PickRandomRankWeightedDistinctAttackMethods(List<CharacterRecruitOption> source, int count)
     {
       var pool = new List<CharacterRecruitOption>(source);
       var picked = new List<CharacterRecruitOption>();
@@ -631,7 +689,7 @@ namespace Game.Flow
         }).ToList();
         if (candidates.Count == 0) break;
 
-        var chosen = candidates[rng.Next(candidates.Count)];
+        var chosen = PickWeightedByRank(candidates, rng);
         picked.Add(chosen);
         pool.Remove(chosen);
 
@@ -639,12 +697,13 @@ namespace Game.Flow
         if (chosenKey != null) usedKeys.Add(chosenKey);
       }
 
-      // 攻撃方法の種類が足りず埋まらなかった分は、表示数を優先して重複を許し残りから補充する。
+      // 攻撃方法の種類が足りず埋まらなかった分は、表示数を優先して重複を許し残りから補充する
+      // (この場合もランクの重みは反映する)。
       while (picked.Count < count && pool.Count > 0)
       {
-        var index = rng.Next(pool.Count);
-        picked.Add(pool[index]);
-        pool.RemoveAt(index);
+        var chosen = PickWeightedByRank(pool, rng);
+        picked.Add(chosen);
+        pool.Remove(chosen);
       }
 
       return picked;

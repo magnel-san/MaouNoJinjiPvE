@@ -96,7 +96,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5081680990215167514, guid: b6d252aca05a2384bb33524d279711b0, type: 3}
       propertyPath: AttackPowerTier
-      value: 5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6205401352468882322, guid: b6d252aca05a2384bb33524d279711b0, type: 3}
       propertyPath: m_LocalScale.x
@@ -157,13 +157,60 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 8140132963572021832, guid: b6d252aca05a2384bb33524d279711b0, type: 3}
     - {fileID: 2492903632840983149, guid: b6d252aca05a2384bb33524d279711b0, type: 3}
+    - {fileID: 6290602380951935952, guid: b6d252aca05a2384bb33524d279711b0, type: 3}
+    - {fileID: 9027348210579663313, guid: b6d252aca05a2384bb33524d279711b0, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 2883017385730430082, guid: b6d252aca05a2384bb33524d279711b0, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4645776111920416001}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7766329291838422899, guid: b6d252aca05a2384bb33524d279711b0, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3614480914289255159}
+    - targetCorrespondingSourceObject: {fileID: 7766329291838422899, guid: b6d252aca05a2384bb33524d279711b0, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 968633706550877259}
   m_SourcePrefab: {fileID: 100100000, guid: b6d252aca05a2384bb33524d279711b0, type: 3}
+--- !u!1 &868843150187056580 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7766329291838422899, guid: b6d252aca05a2384bb33524d279711b0, type: 3}
+  m_PrefabInstance: {fileID: 7478591575884509879}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3614480914289255159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 868843150187056580}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: feb5a2966afcd0e4b9a29dad5f65b0dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.ApproachMovementAbility
+--- !u!114 &968633706550877259
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 868843150187056580}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de431edda9c97254cb5c2748188b0756, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.OrbitingSwordsSkill
+  SwordCount: 1
+  SwordDurationTier: 1
+  Cooldown: 8
+  SwordDamage: 3
+  SwordInvincibilityTime: 0.5
+  OrbitRadius: 1.5
+  OrbitHeight: 1
+  OrbitSpeed: 220
+  SwordPrefab: {fileID: 0}
+  SummonSound: {fileID: 0}
 --- !u!4 &5749903082568803893 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2883017385730430082, guid: b6d252aca05a2384bb33524d279711b0, type: 3}

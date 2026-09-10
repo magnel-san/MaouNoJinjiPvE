@@ -147,6 +147,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7198077097332506306, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
+      propertyPath: Rank
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7198077097332506306, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
       propertyPath: MaxHP
       value: 674.3648
       objectReference: {fileID: 0}
@@ -156,7 +160,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7198077097332506306, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
       propertyPath: AttackPowerTier
-      value: 4
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 8798527007629376761, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
       propertyPath: m_Name
@@ -165,13 +169,58 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 6473679868882724602, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
     - {fileID: 8040102715948543059, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
+    - {fileID: 3178507131855360633, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
+    - {fileID: 4588226545347676733, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 1243338230716361411, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1218543207619714935}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8798527007629376761, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4286584250770807180}
+    - targetCorrespondingSourceObject: {fileID: 8798527007629376761, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1239550384184325974}
   m_SourcePrefab: {fileID: 100100000, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
+--- !u!1 &2454251485106057217 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8798527007629376761, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}
+  m_PrefabInstance: {fileID: 6347231083432856824}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4286584250770807180
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2454251485106057217}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: feb5a2966afcd0e4b9a29dad5f65b0dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.ApproachMovementAbility
+--- !u!114 &1239550384184325974
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2454251485106057217}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 722f4e961929e0b48b29092a391d7e1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.BombDropSkill
+  AttackRange: 3
+  AttackCooldownTier: 2
+  BombPrefab: {fileID: 0}
+  BombFuseTime: 1.5
+  BombKnockbackVector: 20
+  BombDamage: 15
+  BombExplosionRadius: 3
+  DropSound: {fileID: 0}
 --- !u!4 &5284090714166634043 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1243338230716361411, guid: 2ea21be4325b6954384b6089b8b74ed5, type: 3}

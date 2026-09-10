@@ -6,7 +6,9 @@ namespace Game
     // ゲーム開始時にAI/移動をオンオフできるようにする。オフの間は物理演算(重力・衝突)は継続する。
     public class CharacterActivation : MonoBehaviour
     {
-        public bool ActiveOnStart = true;
+        // 実質常にコード側(GameFlowManager等)がSetActive()を明示的に呼ぶため、
+        // プレファブごとにInspector設定する必要が無い(整理のため非表示)。
+        [HideInInspector] public bool ActiveOnStart = true;
 
         MonoBehaviour[] toggleTargets;
         // GameFlowManagerがInstantiate直後(このコンポーネント自身のStart()が走るより前、

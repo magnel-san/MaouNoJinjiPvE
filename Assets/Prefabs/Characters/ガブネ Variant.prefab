@@ -99,12 +99,16 @@ PrefabInstance:
       value: 601.80145
       objectReference: {fileID: 0}
     - target: {fileID: 4140628017493023966, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+      propertyPath: HPTier
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4140628017493023966, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       propertyPath: MoveSpeedTier
       value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 4140628017493023966, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       propertyPath: AttackPowerTier
-      value: 4
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4329506515347436554, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       propertyPath: m_LocalScale.x
@@ -165,13 +169,51 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 675441487573372615, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
     - {fileID: 7607448096284874797, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+    - {fileID: 4489161754838714192, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+    - {fileID: 8243227140226013309, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 1731956416349447609, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3577410334665348071}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1755243942763998483, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1321547101745437927}
+    - targetCorrespondingSourceObject: {fileID: 1755243942763998483, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8325396864224379157}
   m_SourcePrefab: {fileID: 100100000, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+--- !u!1 &7962650478310693354 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1755243942763998483, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+  m_PrefabInstance: {fileID: 8564409966311978233}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1321547101745437927
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7962650478310693354}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: feb5a2966afcd0e4b9a29dad5f65b0dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.ApproachMovementAbility
+--- !u!114 &8325396864224379157
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7962650478310693354}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f9a853e62d48e4459a0c9f8de09ef47, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.GuardAuraSkill
+  AuraReductionTier: 1
 --- !u!4 &7985938030363971904 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1731956416349447609, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}

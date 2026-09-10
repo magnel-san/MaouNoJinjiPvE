@@ -4,15 +4,16 @@ namespace Game
 {
     // キャラの回転に関わらず、指定ローカルY座標・XZ平面向きで360度のHPゲージリングを表示する。
     // uGUI(Canvas)には依存せず、ランタイム生成したリング状メッシュ(Unlit)で描画する。
+    // 全キャラ共通の見た目のため、プレファブごとにInspectorで調整する想定はない(整理のため非表示)。
     [RequireComponent(typeof(CharacterHealth))]
     public class HpBarGauge : MonoBehaviour
     {
-        public float LocalYOffset = 0.05f;
-        public float WorldDiameter = 1.2f;
-        [Range(0.05f, 0.9f)] public float RingThicknessRatio = 0.28f;
-        public Color FullColor = new Color(0.2f, 0.9f, 0.2f);
-        public Color EmptyColor = new Color(0.9f, 0.2f, 0.2f);
-        public Color BackgroundColor = new Color(0f, 0f, 0f, 0.4f);
+        [HideInInspector] public float LocalYOffset = 0.05f;
+        [HideInInspector] public float WorldDiameter = 1.2f;
+        [HideInInspector] public float RingThicknessRatio = 0.28f;
+        [HideInInspector] public Color FullColor = new Color(0.2f, 0.9f, 0.2f);
+        [HideInInspector] public Color EmptyColor = new Color(0.9f, 0.2f, 0.2f);
+        [HideInInspector] public Color BackgroundColor = new Color(0f, 0f, 0f, 0.4f);
 
         const int Segments = 48;
 

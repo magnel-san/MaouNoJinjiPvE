@@ -20,10 +20,11 @@ GameObject:
   - component: {fileID: 2125833205305496878}
   - component: {fileID: 2002935295040141569}
   - component: {fileID: 7943159128987218536}
-  - component: {fileID: 6951770324721018616}
   - component: {fileID: 989620501416216887}
   - component: {fileID: 8988435835550925132}
-  - component: {fileID: 6573999662664294845}
+  - component: {fileID: 5320068308085005002}
+  - component: {fileID: 7084810326758473410}
+  - component: {fileID: 7467735028491501893}
   m_Layer: 0
   m_Name: UFO Variant
   m_TagString: Untagged
@@ -101,10 +102,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5816d836832c9934cb72ee22c5f91870, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterStats
-  AttackPowerTier: 4
-  MassTier: 4
-  MoveSpeedTier: 4
-  MaxHP: 460
+  Rank: 1
+  HPTier: 2
+  AttackPowerTier: 2
+  UseFixedStats: 0
+  FixedMaxHP: 100
+  FixedAttackPower: 10
+  FixedMass: 10
   InvincibilityTime: 0.5
   KnockbackVectorStrength: 45
 --- !u!114 &1842928481483527597
@@ -120,9 +124,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterHealth
   DamageReductionPercent: 0
+  GuardDamageReductionPercent: 30
   FallDeathDespawnDelay: 3
   HitSound: {fileID: 8300000, guid: 4322f517e2fe6a94fbce5f148f83d6a3, type: 3}
   DeathSound: {fileID: 8300000, guid: 61d902bc0de063644895b26bb8f497f6, type: 3}
+  deathGhostAlpha: 0.8
 --- !u!114 &5613781418484772759
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -186,6 +192,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.CharacterMovement
   LateralDamping: 4
+  ReverseBrakePower: 15
 --- !u!114 &2125833205305496878
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -232,18 +239,6 @@ MonoBehaviour:
   FullColor: {r: 0.2, g: 0.9, b: 0.2, a: 1}
   EmptyColor: {r: 0.9, g: 0.2, b: 0.2, a: 1}
   BackgroundColor: {r: 0, g: 0, b: 0, a: 0.4}
---- !u!114 &6951770324721018616
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1757535344258573661}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 87f6a64d9af3065449d9abe51b3c9765, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.GhostAnimationLoop
 --- !u!114 &989620501416216887
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -273,7 +268,7 @@ MonoBehaviour:
   TimeBeforeCharge: 3
   ChargeForce: 8
   ChargeCooldown: 2
---- !u!114 &6573999662664294845
+--- !u!114 &5320068308085005002
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -282,16 +277,50 @@ MonoBehaviour:
   m_GameObject: {fileID: 1757535344258573661}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b2dc1768d04d7a641849f01ea22bfa3f, type: 3}
+  m_Script: {fileID: 11500000, guid: 789d05db94560944a9b044695fde42ab, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.ChainLightningAbility
-  MaxDistance: 9
-  MinDistance: 5
-  CooldownTier: 3
-  DamageTier: 2
-  MaxChainJumps: 2
-  ChainJumpRadius: 5
-  ZapSound: {fileID: 8300000, guid: af285d9bdcdf81a4aa26c52693c669b2, type: 3}
+  m_EditorClassIdentifier: Assembly-CSharp::Game.FlyMovementAbility
+  TargetHeight: 6
+  LiftSpringStrength: 20
+  LiftDamping: 5
+  GroundedHeightThreshold: 0.6
+  PeriodicDescentInterval: 4
+  GroundedVulnerableDuration: 3
+  HorizontalSpeedMultiplier: 0.55
+--- !u!114 &7084810326758473410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1757535344258573661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44d14c27b3fdc4047a608d8f78142fec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.LaserBeamSkill
+  Tier: 1
+  BeamSound: {fileID: 0}
+--- !u!114 &7467735028491501893
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1757535344258573661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 722f4e961929e0b48b29092a391d7e1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.BombDropSkill
+  AttackRange: 3
+  AttackCooldownTier: 1
+  BombPrefab: {fileID: 0}
+  BombFuseTime: 1.5
+  BombKnockbackVector: 20
+  BombDamage: 15
+  BombExplosionRadius: 3
+  DropSound: {fileID: 0}
 --- !u!1 &4663986294565657192
 GameObject:
   m_ObjectHideFlags: 0
@@ -350,11 +379,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f274e2b1f553c904693b1e14596e09c0, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 1.02
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f274e2b1f553c904693b1e14596e09c0, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f274e2b1f553c904693b1e14596e09c0, type: 3}
       propertyPath: m_LocalRotation.w

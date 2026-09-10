@@ -1594,7 +1594,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.BgmPlayer
   _bgmClip: {fileID: 8300000, guid: 30765075d7d3c874aa37940d31dc03b4, type: 3}
-  _volume: 0.401
+  _volume: 0.211
   _playOnAwake: 1
 --- !u!4 &864645099
 Transform:
@@ -1654,6 +1654,7 @@ GameObject:
   - component: {fileID: 912927954}
   - component: {fileID: 912927956}
   - component: {fileID: 912927955}
+  - component: {fileID: 912927957}
   m_Layer: 0
   m_Name: PortraitRoot
   m_TagString: Untagged
@@ -1718,6 +1719,30 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 912927953}
   m_CullTransparentMesh: 1
+--- !u!223 &912927957
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 912927953}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 310
+  m_TargetDisplay: 0
 --- !u!1 &943626429
 GameObject:
   m_ObjectHideFlags: 0
@@ -2990,6 +3015,7 @@ MonoBehaviour:
   _battleRoundCount: 3
   _roundResultDisplaySeconds: 3
   _bossDeathGraceSeconds: 5
+  _roundTimeLimitSeconds: 90
   _practicePhaseSeconds:
   - 15
   - 15

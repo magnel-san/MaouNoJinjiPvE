@@ -3,8 +3,8 @@ using UnityEngine;
 namespace Game
 {
     // 戦闘フェーズ中、プレイヤーからの全体コマンド(集合/退避、BattleCommandState参照)が有効な間、
-    // そのキャラ本来のアビリティの移動判断より優先して行動を上書きする。MovementPriorityを
-    // 既存アビリティ(最大でもFleeAbilityの20)より大幅に高くすることで、CharacterMovementの
+    // そのキャラ本来の移動タイプ(KeepDistance/Approach/Fly、いずれも10)の判断より優先して行動を上書きする。
+    // MovementPriorityを既存の移動タイプより大幅に高くすることで、CharacterMovementの
     // 優先度選択(最高値が勝つ)により自動的に勝つ。コマンドが無効(None)の間は何も提案せず、
     // 通常のアビリティ側AIへそのまま行動を委ねる(=このコンポーネントは常時Enabledのままで良い)。
     [RequireComponent(typeof(CharacterIdentity))]

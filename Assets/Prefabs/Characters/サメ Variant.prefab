@@ -99,8 +99,16 @@ PrefabInstance:
       value: "\u30B5\u30E1 Variant"
       objectReference: {fileID: 0}
     - target: {fileID: 4140628017493023966, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+      propertyPath: Rank
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4140628017493023966, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       propertyPath: MaxHP
       value: 708.3302
+      objectReference: {fileID: 0}
+    - target: {fileID: 4140628017493023966, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+      propertyPath: HPTier
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4140628017493023966, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       propertyPath: MoveSpeedTier
@@ -108,7 +116,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4140628017493023966, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       propertyPath: AttackPowerTier
-      value: 4
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4329506515347436554, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       propertyPath: m_LocalScale.x
@@ -169,15 +177,62 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 675441487573372615, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
     - {fileID: 7607448096284874797, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+    - {fileID: 4489161754838714192, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+    - {fileID: 8243227140226013309, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 1731956416349447609, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2691543618324268885}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1755243942763998483, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2424062891216740586}
+    - targetCorrespondingSourceObject: {fileID: 1755243942763998483, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1567107208410474495}
   m_SourcePrefab: {fileID: 100100000, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
 --- !u!4 &8334841208437886038 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1731956416349447609, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
   m_PrefabInstance: {fileID: 7755876700965956079}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &8356862129677485308 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1755243942763998483, guid: 1bf9d18c4b3ca474db64c188b259e21c, type: 3}
+  m_PrefabInstance: {fileID: 7755876700965956079}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2424062891216740586
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8356862129677485308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: feb5a2966afcd0e4b9a29dad5f65b0dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.ApproachMovementAbility
+--- !u!114 &1567107208410474495
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8356862129677485308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de431edda9c97254cb5c2748188b0756, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.OrbitingSwordsSkill
+  SwordCount: 2
+  SwordDurationTier: 3
+  Cooldown: 8
+  SwordDamage: 7
+  SwordInvincibilityTime: 0.5
+  OrbitRadius: 1.5
+  OrbitHeight: 1
+  OrbitSpeed: 220
+  SwordPrefab: {fileID: 2455735936849453151, guid: 38e49bb51bf2c5c4f8d0cb25f18c1a2b, type: 3}
+  SummonSound: {fileID: 8300000, guid: b274b6e3db9cb7545939ea67661a95fa, type: 3}
