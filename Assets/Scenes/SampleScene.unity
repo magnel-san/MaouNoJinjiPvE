@@ -3424,10 +3424,10 @@ MonoBehaviour:
   _trackingCamera: {fileID: 330585545}
   _poseConfirmSeconds: 0.12
   _thresholds:
-    FingerExtendStraightness: 0.88
-    FingerCurlStraightness: 0.78
-    ThumbExtendRatio: 1.25
-    ThumbCurlRatio: 1.1
+    FingerExtendStraightness: 0.7
+    FingerCurlStraightness: 0.6
+    ThumbExtendRatio: 1.12
+    ThumbCurlRatio: 1
     ThumbDirectionMargin: 0.3
     ClearlyExtendedStraightness: 0.9
   _bothHandsOpenHoldSeconds: 2
