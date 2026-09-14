@@ -127,6 +127,12 @@ namespace Game
                 if (health == null || !health.IsAlive) continue;
                 health.ApplyDamage(damage, color, owner);
                 BossAttackFx.NotifyPlayerHit(targetIdentity);
+
+                // ★追加: ダメージを受けた対象がプレイヤーチームの場合、画面赤フラッシュを実行
+                if (targetIdentity.Team == Team.Player)
+                {
+                    PinchFlashUI.TriggerFlash();
+                }
             }
 
             NotifyNearMissDodges(affected);

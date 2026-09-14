@@ -12,6 +12,22 @@ PrefabInstance:
       propertyPath: m_Name
       value: "\u304D\u306E\u3053 Variant"
       objectReference: {fileID: 0}
+    - target: {fileID: 3789433695958367936, guid: 3bc0c207c98f69e46a044e9596ea1eba, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3988571476556741977, guid: 3bc0c207c98f69e46a044e9596ea1eba, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3988571476556741977, guid: 3bc0c207c98f69e46a044e9596ea1eba, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3988571476556741977, guid: 3bc0c207c98f69e46a044e9596ea1eba, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 2.17
+      objectReference: {fileID: 0}
     - target: {fileID: 6412445779316522713, guid: 3bc0c207c98f69e46a044e9596ea1eba, type: 3}
       propertyPath: Rank
       value: 0
@@ -80,6 +96,7 @@ PrefabInstance:
     - {fileID: 7957916836679390633, guid: 3bc0c207c98f69e46a044e9596ea1eba, type: 3}
     m_RemovedGameObjects:
     - {fileID: 6300597340348138236, guid: 3bc0c207c98f69e46a044e9596ea1eba, type: 3}
+    - {fileID: 2046518969215080045, guid: 3bc0c207c98f69e46a044e9596ea1eba, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 7632504115163178845, guid: 3bc0c207c98f69e46a044e9596ea1eba, type: 3}
       insertIndex: -1

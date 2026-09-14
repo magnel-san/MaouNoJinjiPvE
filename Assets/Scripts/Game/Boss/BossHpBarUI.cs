@@ -15,6 +15,15 @@ namespace Game
         [SerializeField] private Color _fullColor = new Color(0.9f, 0.15f, 0.15f);
         [SerializeField] private Color _lowColor = new Color(1f, 0.85f, 0.1f);
         [SerializeField] private Color _backgroundColor = new Color(0.08f, 0.02f, 0.02f, 0.85f);
+
+        [Header("遅れて減るゲージ設定")]
+        [Tooltip("遅れて減るバーの色（赤メインゲージの後ろで見えやすい暗めのアラートカラー）")]
+        [SerializeField] private Color _delayColor = new Color(0.8f, 0.4f, 0.1f, 0.9f);
+        [Tooltip("ダメージ後、遅れて減り始めるまでの待機時間（秒）")]
+        [SerializeField] private float _delayStartWait = 0.4f;
+        [Tooltip("遅れて減るバーの減少速度")]
+        [SerializeField] private float _delayDrainSpeed = 0.5f;
+
         [Tooltip("被弾時、フラッシュとカメラ揺れをどれだけ強くするか")]
         [SerializeField] private float _hitShakeIntensity = 0.15f;
 
@@ -24,10 +33,15 @@ namespace Game
 
         Canvas canvas;
         Image fillImage;
+        Image delayImage;
         Image flashImage;
         Text nameText;
         Text percentText;
         float flashTimer;
+
+        private float targetHpRatio = 1f;
+        private float currentDelayRatio = 1f;
+        private float delayWaitTimer = 0f;
 
         // 動的にAddComponentする場合(最終決戦の勇者等)、Inspectorで設定できない名前をここで上書きする。
         public void SetName(string name)
@@ -98,6 +112,19 @@ namespace Game
             fillBgImage.color = new Color(0f, 0f, 0f, 0.6f);
             fillBgImage.raycastTarget = false;
 
+            // 遅れて減るゲージ（DelayFill）をメインゲージの背後に生成
+            var delayRect = NewChildRect("DelayFill", fillAreaRect, Vector2.zero, Vector2.one, Vector2.zero);
+            delayRect.offsetMin = Vector2.zero;
+            delayRect.offsetMax = Vector2.zero;
+            delayImage = delayRect.gameObject.AddComponent<Image>();
+            delayImage.sprite = VfxShaderUtil.GetGradientFillSprite();
+            delayImage.color = _delayColor;
+            delayImage.type = Image.Type.Filled;
+            delayImage.fillMethod = Image.FillMethod.Horizontal;
+            delayImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+            delayImage.fillAmount = 1f;
+            delayImage.raycastTarget = false;
+
             var fillRect = NewChildRect("Fill", fillAreaRect, Vector2.zero, Vector2.one, Vector2.zero);
             fillRect.offsetMin = Vector2.zero;
             fillRect.offsetMax = Vector2.zero;
@@ -146,9 +173,23 @@ namespace Game
         void HandleHpChanged(float current, float max)
         {
             var pct = max > 0f ? Mathf.Clamp01(current / max) : 0f;
-            fillImage.fillAmount = pct;
-            fillImage.color = Color.Lerp(_lowColor, _fullColor, pct);
-            percentText.text = $"{Mathf.RoundToInt(pct * 100f)}%";
+            
+            // 回復・即時上昇時
+            if (pct >= targetHpRatio)
+            {
+                currentDelayRatio = pct;
+                if (delayImage != null) delayImage.fillAmount = currentDelayRatio;
+            }
+            else
+            {
+                // 被ダメージ時は待機タイマーを設定
+                delayWaitTimer = _delayStartWait;
+            }
+
+            targetHpRatio = pct;
+            fillImage.fillAmount = targetHpRatio;
+            fillImage.color = Color.Lerp(_lowColor, _fullColor, targetHpRatio);
+            percentText.text = $"{Mathf.RoundToInt(targetHpRatio * 100f)}%";
 
             flashTimer = FlashDuration;
             CameraShake.Shake(_hitShakeIntensity);
@@ -156,12 +197,31 @@ namespace Game
 
         void Update()
         {
-            if (flashTimer <= 0f) return;
+            // 1. 被弾時画面・ゲージフラッシュ処理
+            if (flashTimer > 0f)
+            {
+                flashTimer -= Time.deltaTime;
+                var c = flashImage.color;
+                c.a = Mathf.Clamp01(flashTimer / FlashDuration) * 0.7f;
+                flashImage.color = c;
+            }
 
-            flashTimer -= Time.deltaTime;
-            var c = flashImage.color;
-            c.a = Mathf.Clamp01(flashTimer / FlashDuration) * 0.7f;
-            flashImage.color = c;
+            // 2. 遅れて下がるゲージのアニメーション処理
+            if (currentDelayRatio > targetHpRatio)
+            {
+                if (delayWaitTimer > 0f)
+                {
+                    delayWaitTimer -= Time.deltaTime;
+                }
+                else
+                {
+                    currentDelayRatio = Mathf.MoveTowards(currentDelayRatio, targetHpRatio, _delayDrainSpeed * Time.deltaTime);
+                    if (delayImage != null)
+                    {
+                        delayImage.fillAmount = currentDelayRatio;
+                    }
+                }
+            }
         }
     }
 }

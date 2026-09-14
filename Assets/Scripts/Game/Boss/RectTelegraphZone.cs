@@ -139,6 +139,12 @@ namespace Game
                 health.ApplyDamage(damage, color, owner);
                 BossAttackFx.NotifyPlayerHit(c);
                 hitTargets.Add(c);
+
+                // ★追加: プレイヤーに攻撃がヒットした場合のみ画面を赤くフラッシュさせる
+                if (c.Team == Team.Player)
+                {
+                    PinchFlashUI.TriggerFlash();
+                }
             }
 
             // ignoreGuardの攻撃は位置に関わらず全体に命中するため、「よけた」の概念が無い

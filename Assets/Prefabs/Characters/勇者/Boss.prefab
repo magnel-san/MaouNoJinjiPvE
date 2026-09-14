@@ -229,6 +229,9 @@ MonoBehaviour:
   _fullColor: {r: 0.9, g: 0.15, b: 0.15, a: 1}
   _lowColor: {r: 1, g: 0.85, b: 0.1, a: 1}
   _backgroundColor: {r: 0.08, g: 0.02, b: 0.02, a: 0.85}
+  _delayColor: {r: 0.8, g: 0.4, b: 0.1, a: 0.9}
+  _delayStartWait: 0.2
+  _delayDrainSpeed: 0.5
   _hitShakeIntensity: 0.15
 --- !u!114 &-5698478252255323253
 MonoBehaviour:

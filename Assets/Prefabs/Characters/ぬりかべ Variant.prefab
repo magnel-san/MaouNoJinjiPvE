@@ -64,6 +64,10 @@ PrefabInstance:
       propertyPath: AttackPowerTier
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6298521448538313297, guid: c74dbb9e050523240b26b72028fedaf3, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 5687071001266695759, guid: c74dbb9e050523240b26b72028fedaf3, type: 3}
     - {fileID: 4054356789097149565, guid: c74dbb9e050523240b26b72028fedaf3, type: 3}
