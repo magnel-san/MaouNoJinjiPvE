@@ -1,4 +1,6 @@
+using System.Linq;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Game
 {
@@ -47,13 +49,39 @@ namespace Game
 
         void Update()
         {
-            var firing = BattleCommandState.BothHandsOpenActive && target != null && targetHealth != null
-                && targetHealth.IsAlive && Camera.main != null;
+            // ターゲットが設定されていない場合、自動的に敵（Boss/Enemy）を検出してセットする
+            if (target == null || targetHealth == null || !targetHealth.IsAlive)
+            {
+                TryAutoAcquireTarget();
+            }
+
+            // 両手パー(BothHandsOpenActive) または キーボードの「6キー押しっぱなし」でビーム発射判定
+            var keyboard = Keyboard.current;
+            bool isKey6Pressed = keyboard != null && keyboard[Key.Digit6].isPressed;
+            bool isInputActive = BattleCommandState.BothHandsOpenActive || isKey6Pressed;
+
+            var mainCam = Camera.main;
+
+            // デバッグログ（入力されているが発射条件が揃っていない場合のサポート）
+            if (isInputActive)
+            {
+                if (target == null || targetHealth == null || !targetHealth.IsAlive)
+                {
+                    Debug.LogWarning("[FinalBattleBeam] 入力は検知されましたが、攻撃対象(敵)が見つからないか死亡しています。");
+                }
+                else if (mainCam == null)
+                {
+                    Debug.LogWarning("[FinalBattleBeam] 入力は検知されましたが、MainCameraが見つかりません。");
+                }
+            }
+
+            var firing = isInputActive && target != null && targetHealth != null
+                && targetHealth.IsAlive && mainCam != null;
 
             line.enabled = firing;
             if (!firing) return;
 
-            var camPos = Camera.main.transform.position;
+            var camPos = mainCam.transform.position;
             var targetPos = target.transform.position + Vector3.up * 1f;
             line.SetPosition(0, camPos);
             line.SetPosition(1, targetPos);
@@ -70,5 +98,23 @@ namespace Game
                 CameraShake.Shake(0.15f);
             }
         }
+
+        /// <summary>
+        /// 外部からSetTargetが呼ばれていない場合、自動的に生存している敵を取得する
+        /// </summary>
+        private void TryAutoAcquireTarget()
+        {
+            if (CharacterRegistry.All == null) return;
+
+            var enemy = CharacterRegistry.All.FirstOrDefault(c => 
+                c != null && c.Team == Team.Enemy && c.IsAlive);
+
+            if (enemy != null)
+            {
+                SetTarget(enemy);
+            }
+        }
     }
 }
+
+

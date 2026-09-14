@@ -177,20 +177,24 @@ namespace Game
 
             if (bothOpen)
             {
-                _bothHandsHoldTimer += Time.deltaTime;
+                _bothHandsHoldTimer += Time.deltaTime; // ★ s を追加
             }
             else
             {
-                // 1フレームの誤検出だけで進捗が消えないよう、離した時は倍速で減衰させる(即ゼロにはしない)。
-                _bothHandsHoldTimer = Mathf.Max(0f, _bothHandsHoldTimer - Time.deltaTime * 2f);
+                _bothHandsHoldTimer = Mathf.Max(0f, _bothHandsHoldTimer - Time.deltaTime * 2f); // ★ s を追加
             }
 
-            if (_bothHandsHoldTimer >= _bothHandsOpenHoldSeconds)
+            if (_bothHandsHoldTimer >= _bothHandsOpenHoldSeconds) // ★ s を追加
             {
-                _bothHandsHoldTimer = 0f;
-                ultimateGauge?.TryTriggerFromExternal();
+                _bothHandsHoldTimer = 0f; // ★ s を追加
+
+                if (ultimateGauge != null)
+                {
+                    ultimateGauge.TryTriggerFromExternal();
+                }
             }
         }
+
 
         // グーを出している間、BattleCommandState.GuardActiveを立てるだけの持続コマンド。
         // 実際のダメージ軽減はCharacterHealth.ApplyDamageがGuardActiveを見て行う

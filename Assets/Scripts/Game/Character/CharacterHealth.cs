@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 namespace Game
@@ -18,6 +19,12 @@ namespace Game
 
         [Tooltip("落下死のY座標に到達後、この秒数その場に留まると消滅する")]
         public float FallDeathDespawnDelay = 3f;
+
+        [Header("通常死亡時の演出設定")]
+        [Tooltip("死亡後、小さくなり始めるまでの待機時間(秒)")]
+        public float DeathDespawnDelay = 2.0f;
+        [Tooltip("縮小して完全消滅するまでの時間(秒)")]
+        public float ShrinkDuration = 1.0f;
 
         [Header("効果音 (未設定なら無音)")]
         [Tooltip("被弾のたびに鳴らす効果音")]
@@ -188,16 +195,41 @@ namespace Game
             CombatFx.DeathBurst(transform.position + Vector3.up * 0.5f, CombatFx.DefaultDamageColor);
             SfxUtil.PlayAt(DeathSound, transform.position);
 
-            // --- 追記：死亡時の半透明表現 ---
+            // 死亡時の半透明表現
             ApplyGhostAlpha(deathGhostAlpha);
 
-                // ★ 追記：死亡カットイン演出の再生呼び出し
-                if (DeathCutinManager.Instance != null)
-                {
-                    DeathCutinManager.Instance.PlayDeathCutin();
-                }
+            // 死亡カットイン演出の再生呼び出し
+            if (DeathCutinManager.Instance != null)
+            {
+                DeathCutinManager.Instance.PlayDeathCutin();
+            }
 
             OnDied?.Invoke();
+
+            // ★ 死亡演出（一定時間維持後に小さくなって消える処理）を開始
+            StartCoroutine(ShrinkAndDestroyRoutine());
+        }
+
+        // 死亡後数秒待ってから徐々に小さくなり消滅するコルーチン
+        private IEnumerator ShrinkAndDestroyRoutine()
+        {
+            // 設定した秒数待機
+            yield return new WaitForSeconds(DeathDespawnDelay);
+
+            Vector3 initialScale = transform.localScale;
+            float elapsed = 0f;
+
+            // 縮小処理
+            while (elapsed < ShrinkDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / ShrinkDuration);
+                transform.localScale = Vector3.Lerp(initialScale, Vector3.zero, t);
+                yield return null;
+            }
+
+            // 完全消滅
+            Destroy(gameObject);
         }
 
         // 見た目を半透明にする処理

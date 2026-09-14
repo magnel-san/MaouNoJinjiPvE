@@ -28,13 +28,37 @@ namespace Game
         // グー(防御)を保持している間だけtrueになる。CommandTypeとは独立した持続フラグ
         // (退避/集合のような単発の移動コマンドではなく、出している間ずっと効く効果のため)。
         public static bool GuardActive { get; private set; }
-        public static void SetGuardActive(bool active) => GuardActive = active;
+        public static void SetGuardActive(bool active)
+        {
+            GuardActive = active;
+            if (active) _lastGestureWriteTime = Time.unscaledTime;
+        }
 
         // 両手パーを今まさに維持しているかどうか(2秒キープの必殺技トリガーとは別の、
         // フレーム単位の連続状態)。最終決戦のカメラビーム(FinalBattleBeamController)が
         // これを見て、両手パーが続く限り連射する。
         public static bool BothHandsOpenActive { get; private set; }
-        public static void SetBothHandsOpen(bool active) => BothHandsOpenActive = active;
+
+        /// <summary>
+        /// 両手パーの状態を直接変更（ジェスチャー側から呼ばれた場合はタイムスタンプを更新して保護する）
+        /// </summary>
+        public static void SetBothHandsOpen(bool active)
+        {
+            BothHandsOpenActive = active;
+            if (active)
+            {
+                _lastGestureWriteTime = Time.unscaledTime;
+            }
+        }
+
+        /// <summary>
+        /// ジェスチャー認識スクリプトから明確に両手パーのON/OFFを通知するための専用メソッド
+        /// </summary>
+        public static void SubmitGestureBothHandsOpen(bool active)
+        {
+            BothHandsOpenActive = active;
+            _lastGestureWriteTime = Time.unscaledTime;
+        }
 
         static float _lastGestureWriteTime = -999f;
 
@@ -55,6 +79,15 @@ namespace Game
             CommandType = commandType;
             RallyWorldPosition = rallyWorldPosition;
             FocusFilter = focusFilter;
+        }
+
+        /// <summary>
+        /// キーボード/マウスからの両手パー入力（ジェスチャー優先時間中は無視される）
+        /// </summary>
+        public static void SubmitKeyboardBothHandsOpen(bool active)
+        {
+            if (Time.unscaledTime - _lastGestureWriteTime < GestureGraceSeconds) return;
+            BothHandsOpenActive = active;
         }
 
         // 戦闘フェーズの開始/終了時に呼び、前回の戦闘の入力状態を持ち越さないようにする。

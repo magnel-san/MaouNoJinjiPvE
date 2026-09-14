@@ -108,7 +108,7 @@ MonoBehaviour:
   UseFixedStats: 0
   FixedMaxHP: 100
   FixedAttackPower: 10
-  FixedMass: 10
+  FixedMass: 100
   InvincibilityTime: 0.5
   KnockbackVectorStrength: 45
 --- !u!114 &7942212564496599532

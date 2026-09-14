@@ -5,8 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace Game
 {
-    // 戦闘中、時間経過で自動的に溜まる必殺ゲージ。100%になった状態でキーボード6を押すと、
-    // 生存している全プレイヤーキャラを一定時間だけ巨大化させ、HPを回復し、攻撃力・移動速度を倍増させる。
+    // 戦闘中、時間経過で自動的に溜まる必殺ゲージ。100%になった状態でキーボード6または両手パーで発動。
     // BattleInput GameObject(BattleCursorInputDebug等と同じ)に乗せることで、戦闘フェーズ中だけ
     // 自動的に有効/無効になる(OnEnable/OnDisableでゲージ・ブースト状態をリセットする)。
     public class UltimateGaugeController : MonoBehaviour
@@ -59,10 +58,16 @@ namespace Game
 
         void Update()
         {
+            // ボスのHPが0以下（死亡済み）の場合は必殺技処理やゲージ更新を行わない
+            if (IsBossDead())
+            {
+                return;
+            }
+
             if (FinalBattleMode)
             {
                 // 最終決戦中は常に100%表示にするだけで、通常のブースト(スタット強化)は発動させない
-                // (発動はFinalBattleBeamControllerが両手パーの継続を見て別途処理する)。
+                // (発動・ビーム照射はFinalBattleBeamControllerがBattleCommandState.BothHandsOpenActiveを見て直接処理する)。
                 GaugeFraction = 1f;
                 return;
             }
@@ -82,7 +87,10 @@ namespace Game
             if (IsReady)
             {
                 var keyboard = Keyboard.current;
-                if (keyboard != null && keyboard[Key.Digit6].wasPressedThisFrame)
+                bool isKeyPressed = keyboard != null && keyboard[Key.Digit6].wasPressedThisFrame;
+                
+                // 6キー入力または両手パー入力(BattleCommandState)で通常ブーストを発動
+                if (isKeyPressed || BattleCommandState.BothHandsOpenActive)
                 {
                     TriggerBoost();
                 }
@@ -93,8 +101,32 @@ namespace Game
         // 最終決戦中はここでの通常ブーストは無効(ビームはFinalBattleBeamController側で処理する)。
         public void TryTriggerFromExternal()
         {
+            if (IsBossDead()) return;
             if (FinalBattleMode) return;
             if (IsReady && !IsBoostActive) TriggerBoost();
+        }
+
+        /// <summary>
+        /// ボス（敵キャラクター）が死亡しているか（HP0以下か）をチェック
+        /// </summary>
+        private bool IsBossDead()
+        {
+            if (CharacterRegistry.All == null) return false;
+
+            // Team.Enemy のキャラクターを取得（Team enum に Boss が無いため Enemy で判定）
+            var boss = CharacterRegistry.All.FirstOrDefault(c => 
+                c != null && c.Team == Team.Enemy);
+
+            if (boss != null)
+            {
+                var health = boss.GetComponent<CharacterHealth>();
+                if (health != null && (health.CurrentHP <= 0f || !boss.IsAlive))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         void TriggerBoost()
@@ -104,7 +136,6 @@ namespace Game
             GaugeFraction = 0f;
             boostedCharacters.Clear();
 
-            // ★ここに追加します！（78行目付近）
             if (UltimateCutinManager.Instance != null)
             {
                 UltimateCutinManager.Instance.PlayUltimateCutin();
@@ -147,3 +178,5 @@ namespace Game
         }
     }
 }
+
+

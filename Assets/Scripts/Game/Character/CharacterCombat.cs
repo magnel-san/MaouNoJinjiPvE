@@ -21,7 +21,7 @@ namespace Game
         private float MaxUpwardAngleRatio = 0.15f;
 
         [Tooltip("削減された上方向への力を横方向(水平ベクトル)に還元・変換するかどうか")]
-        public bool RedirectUpwardToHorizontal = true;
+        private bool RedirectUpwardToHorizontal = false;
 
         CharacterStats stats;
         CharacterHealth health;

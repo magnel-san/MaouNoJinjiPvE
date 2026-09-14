@@ -25,11 +25,20 @@ namespace Game
         [Tooltip("進行方向と「逆」に進んでいる際に、前の慣性を打ち消すブレーキの強さ（高いほどキレのある切り返しになります）")]
         public float ReverseBrakePower = 15f;
 
+        [Header("勝利演出設定")]
+        [Tooltip("勝利時に跳ねる力")]
+        private float BounceForce = 10f;
+        [Tooltip("跳ねる間隔(秒)")]
+        public float BounceInterval = 0.6f;
+
         Rigidbody rb;
         CharacterStats stats;
         CharacterPosture posture;
         BoundaryAvoidance boundaryAvoidance;
+        CharacterIdentity identity;
         readonly List<IMovementIntentSource> sources = new List<IMovementIntentSource>();
+
+        float bounceTimer;
 
         void Awake()
         {
@@ -37,6 +46,7 @@ namespace Game
             stats = GetComponent<CharacterStats>();
             posture = GetComponent<CharacterPosture>();
             boundaryAvoidance = GetComponent<BoundaryAvoidance>();
+            identity = GetComponent<CharacterIdentity>();
         }
 
         void Start()
@@ -50,6 +60,21 @@ namespace Game
 
         void FixedUpdate()
         {
+            // 自分のチームが勝利しているか判定
+            if (IsVictoryConditionMet())
+            {
+                // レイヤーが "Yusha" ではない場合のみ勝利演出を行う
+                int yushaLayer = LayerMask.NameToLayer("Yusha");
+                bool isYushaLayer = (yushaLayer != -1 && gameObject.layer == yushaLayer);
+
+                if (!isYushaLayer)
+                {
+                    PerformVictoryAction();
+                    return; // 勝利演出中は通常の移動処理を行わない
+                }
+            }
+
+            // --- 以下、通常の移動処理 ---
             IMovementIntentSource best = null;
             MovementIntent bestIntent = default;
             int bestPriority = int.MinValue;
@@ -77,7 +102,6 @@ namespace Game
                 Vector3 combined = behaviorDir.normalized * (1f - urgency) + awayDir * urgency;
                 if (combined.sqrMagnitude < 0.01f)
                 {
-                    // 行動方向と回避方向がほぼ正反対で打ち消し合う場合、境界に沿った横方向へ逃がす。
                     combined = Vector3.Cross(Vector3.up, awayDir);
                 }
                 finalDir = combined;
@@ -94,7 +118,6 @@ namespace Game
             {
                 Vector3 desiredDir = finalDir.normalized;
 
-                // 水平面上の現在の速度を取得 (Y軸成分は無視)
                 Vector3 currentVelFlat = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
                 Vector3 desiredDirFlat = new Vector3(desiredDir.x, 0f, desiredDir.z);
 
@@ -102,26 +125,78 @@ namespace Game
                 {
                     desiredDirFlat.Normalize();
 
-                    // --- 1. 横方向の速度成分を打ち消す (既存処理) ---
                     Vector3 lateralVel = currentVelFlat - Vector3.Dot(currentVelFlat, desiredDirFlat) * desiredDirFlat;
                     rb.AddForce(-lateralVel * LateralDamping, ForceMode.Acceleration);
 
-                    // --- 2. ★追加：逆方向（後ろ向き）の速度成分を打ち消すブレーキ処理 ---
                     float forwardSpeed = Vector3.Dot(currentVelFlat, desiredDirFlat);
-                    if (forwardSpeed < 0f) // 進みたい方向と「逆」に動いている場合
+                    if (forwardSpeed < 0f)
                     {
-                        // 逆方向への速度ベクトルを取り出す
                         Vector3 reverseVel = forwardSpeed * desiredDirFlat;
-                        
-                        // 反対方向への慣性を力強く相殺（ブレーキをかける）
                         rb.AddForce(-reverseVel * ReverseBrakePower, ForceMode.Acceleration);
                     }
                 }
 
-                // --- 3. 目標方向への推進力を与える ---
                 float alignment = Vector3.Dot(transform.forward, desiredDir);
                 rb.AddForce(transform.forward * (stats.MoveSpeed * speedMultiplier * alignment), ForceMode.Acceleration);
             }
+        }
+
+        /// <summary>
+        /// カメラを向いてぴょんぴょんと跳ねる勝利演出
+        /// </summary>
+        private void PerformVictoryAction()
+        {
+            // 1. メインカメラの方を向く
+            var mainCam = Camera.main;
+            if (mainCam != null && posture != null)
+            {
+                Vector3 lookDir = mainCam.transform.position - transform.position;
+                lookDir.y = 0f; // 水平方向のみ向きを変える
+                if (lookDir.sqrMagnitude > 0.001f)
+                {
+                    posture.DesiredFacingDirection = lookDir.normalized;
+                }
+            }
+
+            // 2. ぴょんぴょんと跳ねる (一定時間ごとにジャンプ)
+            bounceTimer += Time.fixedDeltaTime;
+            if (bounceTimer >= BounceInterval)
+            {
+                bounceTimer = 0f;
+
+                // 地面に近い場合のみ跳ねる（連打で空中へ飛び上がるのを防ぐ）
+                if (Mathf.Abs(rb.linearVelocity.y) < 0.5f)
+                {
+                    rb.AddForce(Vector3.up * BounceForce, ForceMode.Impulse);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 自分のチームが勝利したかどうかの判定処理
+        /// </summary>
+        private bool IsVictoryConditionMet()
+        {
+            if (identity == null) return false;
+
+            // 1. 最終決戦(勇者)を撃破してゲームクリア中・リザルト表示中であれば無条件で勝利
+            if (Game.Flow.GameFlowManager.IsGameCleared)
+            {
+                return true;
+            }
+
+            // 2. 通常ラウンド用の敵全滅チェック
+            bool hasLivingEnemy = false;
+            foreach (var character in CharacterRegistry.All)
+            {
+                if (character != null && character.Team != identity.Team && character.IsAlive)
+                {
+                    hasLivingEnemy = true;
+                    break;
+                }
+            }
+
+            return !hasLivingEnemy;
         }
     }
 }

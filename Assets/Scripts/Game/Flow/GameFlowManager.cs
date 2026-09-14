@@ -57,6 +57,8 @@ namespace Game.Flow
     [Tooltip("ゲームクリア画面(GAME CLEARの一言表示)を出しておく秒数")]
     [SerializeField] private float _gameClearDisplaySeconds = 2.5f;
 
+    public static bool IsGameCleared { get; private set; } // ★追加: ゲームクリア（勇者撃破）フラグ
+
     [System.Serializable]
     public class ScoreRating
     {
@@ -209,6 +211,8 @@ namespace Game.Flow
     // リザルト画面でEnterキーを押した後、タイトルからやり直せるよう全状態をクリアする。
     private void ResetForNewGame()
     {
+      IsGameCleared = false; // ★ここを追加！(タイトルに戻った時にリセット)
+
       foreach (var identity in CharacterRegistry.All.ToList())
       {
         if (identity == null) continue;
@@ -311,10 +315,18 @@ namespace Game.Flow
       if (heroHpBar == null) heroHpBar = instance.AddComponent<BossHpBarUI>();
       heroHpBar.SetName("勇者");
 
-      var ultimateGauge = _battleInputRoot != null ? _battleInputRoot.GetComponentInChildren<UltimateGaugeController>(true) : null;
-      var beamController = _battleInputRoot != null ? _battleInputRoot.GetComponentInChildren<FinalBattleBeamController>(true) : null;
-      if (beamController == null && _battleInputRoot != null) beamController = _battleInputRoot.AddComponent<FinalBattleBeamController>();
-      if (beamController != null) beamController.SetTarget(identity);
+      var ultimateGauge = _battleInputRoot != null ? _battleInputRoot.GetComponentInChildren<UltimateGaugeController>(true) : FindAnyObjectByType<UltimateGaugeController>();
+      var beamController = _battleInputRoot != null ? _battleInputRoot.GetComponentInChildren<FinalBattleBeamController>(true) : FindAnyObjectByType<FinalBattleBeamController>();
+
+      if (beamController == null && _battleInputRoot != null)
+      {
+          beamController = _battleInputRoot.AddComponent<FinalBattleBeamController>();
+      }
+
+      if (beamController != null)
+      {
+          beamController.SetTarget(identity);
+      }
 
       DamageStatsTracker.Reset();
       SetAllCharactersActive(true);
@@ -333,7 +345,29 @@ namespace Game.Flow
       if (beamController != null) beamController.enabled = false;
       if (ultimateGauge != null) ultimateGauge.SetFinalBattleMode(false);
       SetBattleInputActive(false);
-      SetAllCharactersActive(false);
+
+      if (heroDefeated)
+      {
+          IsGameCleared = true; // 勝利フラグON
+
+          // ★撃破演出〜ゲームクリア画面の間はキャラを無効化せず、ぴょんぴょん跳ねさせる！
+          if (deathReaction != null) yield return new WaitUntil(() => deathReaction.SequenceFinished);
+
+          GameClearUI.Show(ScoreManager.TotalScore, _gameClearDisplaySeconds);
+          yield return new WaitForSeconds(_gameClearDisplaySeconds);
+
+          var rating = ResolveRating(ScoreManager.TotalScore);
+          yield return GameResultUI.ShowAsync(DamageStatsTracker.TotalDamage, ScoreManager.CoinScore,
+            ScoreManager.CoinScore, ScoreManager.TotalScore, rating.RatingLabel, rating.Comment);
+
+          // ★リザルト画面まで全て終わった最後のタイミングで無効化する
+          SetAllCharactersActive(false);
+      }
+      else
+      {
+          // 敗北時はすぐに無効化
+          SetAllCharactersActive(false);
+      }
 
       // ゲームクリア/リザルト画面と味方HP一覧が重ならないよう隠す(ゲームはここで終了するため、
       // 次回はResetForNewGame後の1ラウンド目でRespawnAllPlayerCharacters時に再表示される)。
@@ -342,6 +376,8 @@ namespace Game.Flow
 
       if (heroDefeated)
       {
+        IsGameCleared = true; // ★ここを追加！(これで最終決戦の勝利を通知)
+
         // 撃破演出(カメラフォーカス+回転+縮小+コインばらまき)が終わるまで待つ。
         if (deathReaction != null) yield return new WaitUntil(() => deathReaction.SequenceFinished);
 
