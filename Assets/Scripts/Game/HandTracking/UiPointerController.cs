@@ -28,6 +28,10 @@ namespace Game.HandTracking
     [Tooltip("ポインター位置の平滑化にかける時間(秒)。0で平滑化なし、値が大きいほど滑らかだが遅延が増える")]
     [SerializeField] private float _smoothingTime = 0.05f;
 
+    [Header("表示調整")]
+    [Tooltip("指先の正確な判定位置に対して、カーソル画像をどれだけずらして表示するか。(例: Yをマイナスにすると画像を下に下げられます)")]
+    [SerializeField] private Vector2 _cursorOffset = new Vector2(0f, -30f);
+
     [Header("デバッグ")]
     [Tooltip("ONの間は手のトラッキングを無視し、マウスの位置でカーソルを操作する。")]
     [SerializeField] private bool _debugUseMouse;
@@ -102,7 +106,8 @@ namespace Game.HandTracking
 
       if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, EventCamera, out var localPoint))
       {
-        _cursorRect.anchoredPosition = localPoint;
+        // 指先の判定位置(localPoint)に対して表示用オフセット(_cursorOffset)を加算
+        _cursorRect.anchoredPosition = localPoint + _cursorOffset;
       }
     }
 

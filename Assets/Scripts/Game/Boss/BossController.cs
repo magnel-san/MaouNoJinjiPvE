@@ -333,7 +333,7 @@ namespace Game
 
             var center = movement.AreaCenter;
             var radius = movement.AreaRadius;
-            var size = new Vector2(radius * 2.2f, radius * 2.2f); // アリーナ全体を覆うのに十分な余裕
+            var size = new Vector2(radius * 3.30f, radius * 3.30f); // アリーナ全体を覆うのに十分な余裕
 
             RectTelegraphZone.Spawn(center, size, warning, damage, identity, true, _telegraphWarningSound, _telegraphDetonateSound);
             TriggerSpecialAttackAnim();
