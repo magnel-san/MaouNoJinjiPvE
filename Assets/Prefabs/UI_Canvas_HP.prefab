@@ -313,7 +313,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!114 &3996996980842404676
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -346,6 +346,5 @@ MonoBehaviour:
   targetHealth: {fileID: 0}
   mainHpImage: {fileID: 6200443682144934314}
   redHpImage: {fileID: 5674105637922416121}
-  offset: {x: 0, y: 2, z: 0}
-  redGaugeDelay: 0.5
-  redGaugeSpeed: 0.5
+  redGaugeDelay: 0.3
+  redGaugeSpeed: 0.3
