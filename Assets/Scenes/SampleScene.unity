@@ -480,7 +480,7 @@ MonoBehaviour:
   _canvas: {fileID: 1354117116}
   _useRightHand: 1
   _smoothingTime: 0.05
-  _debugUseMouse: 1
+  _debugUseMouse: 0
 --- !u!4 &277823927
 Transform:
   m_ObjectHideFlags: 0
@@ -646,11 +646,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2be1c339caec942009f7d69dbda225de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.RallyCameraFollower
-  _bossObjectName: Boss
   _cameraOffset: {x: 0, y: 20, z: -16}
   _focusRatio: 0.5
   _smoothSpeed: 4
-  _baseFov: 60
+  _baseFov: 50
   _maxFov: 85
   _zoomSmoothSpeed: 3
   _screenMargin: 0.1

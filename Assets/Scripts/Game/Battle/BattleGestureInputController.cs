@@ -243,7 +243,8 @@ namespace Game
         // 伸びている指が1本でもあれば、パー等の別ジェスチャーの途中とみなしキャンセルする。
         static HandPose ClassifyPose(HandPoseClassifier.FingerState f, HandPoseClassifier.FingerMetrics m, HandPoseClassifier.ThumbDirection thumbDir, float clearlyExtendedThreshold)
         {
-            if (!f.Thumb && f.Index && !f.Middle && !f.Ring && !f.Pinky) return HandPose.IndexOnly;
+            // 【変更例】中指・薬指・小指が伸びていなければ、親指の状態に関わらず「人差し指指定」とみなす
+            if (f.Index && !f.Middle && !f.Ring && !f.Pinky) return HandPose.IndexOnly;
             if (f.Index && f.Middle && f.Ring && f.Pinky) return HandPose.OpenPalm;
             if (!f.Thumb && f.Index && f.Middle && !f.Ring && !f.Pinky) return HandPose.Scissors;
             if (!f.Thumb && f.Index && !f.Middle && !f.Ring && f.Pinky) return HandPose.IndexPinky;
@@ -300,12 +301,13 @@ namespace Game
             var cam = _trackingCamera != null ? _trackingCamera : Camera.main;
             if (cam == null) return false;
 
-            // 手首+4指の付け根(正規化座標)の平均を「手の中心」とする。
-            var palmX = (normLm[0].x + normLm[5].x + normLm[9].x + normLm[13].x + normLm[17].x) / 5f;
-            var palmY = (normLm[0].y + normLm[5].y + normLm[9].y + normLm[13].y + normLm[17].y) / 5f;
-            // _handTrackingController.NormalizedToViewport経由で変換することで、_mirrorX設定値の
-            // ハードコードを避け、UIカーソル(UiPointerController)等と常に同じ変換規約に揃える。
-            var viewport2D = _handTrackingController.NormalizedToViewport(palmX, palmY);
+            // 【修正】パーム中心ではなく「人差し指の先端(8番)」または「人差し指の付け根(5番)との中間」を基準にする
+            // 人差し指の先端(Index Tip)の座標を使うことで2D指マークと位置を一致させる
+            var targetX = normLm[8].x;
+            var targetY = normLm[8].y;
+
+            // Viewport変換
+            var viewport2D = _handTrackingController.NormalizedToViewport(targetX, targetY);
             var viewport = new Vector3(viewport2D.x, viewport2D.y, 0f);
 
             var ray = cam.ViewportPointToRay(viewport);
@@ -313,6 +315,19 @@ namespace Game
             if (!plane.Raycast(ray, out var enter)) return false;
 
             worldPos = ray.GetPoint(enter);
+
+            // 【手前に行きやすくする Z軸の感度補正】
+            // Z座標（奥行き）の基準位置からのズレを補正して、手前（マイナス方向）に届きやすくする
+            // ※数値(1.5fやオフセット)は実際のステージ座標に合わせて微調整してください
+            float centerZ = 0f; // ステージの中央のZ座標
+            float zOffset = worldPos.z - centerZ;
+
+            if (zOffset < 0) // 手前側に指しているとき
+            {
+                zOffset *= 1.5f; // 手前方向への移動量を1.5倍に増幅する
+            }
+            worldPos.z = centerZ + zOffset;
+
             return true;
         }
 
